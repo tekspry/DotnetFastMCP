@@ -1,0 +1,141 @@
+# .gitignore for DotnetFastMCP
+
+# Build results
+bin/
+obj/
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+[Ww][Ii][Nn]32/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+
+# Visual Studio cache/options
+.vs/
+.vscode/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.userprefs
+
+# Visual Studio Code
+.vscode/
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.code-workspace
+
+# Rider
+.idea/
+.idea/**/
+*.sln.iml
+*.suo
+*.user
+
+# User-specific files
+*.rsuser
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# NuGet Packages
+*.nupkg
+*.snupkg
+*.nuget.props
+*.nuget.targets
+
+# Local history for Visual Studio
+.localhistory/
+
+# BeatPulse healthcheck temp database
+healthchecksdb
+
+# Backup Files
+*.bak
+*.tmp
+*.temp
+*~
+
+# OS Files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE specific files
+*.swp
+*.swo
+*~
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+*.sublime-workspace
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Publish directories
+publish/
+PublishProfiles/
+
+# Session, cache, temp files
+.session
+.cache
+temp/
+tmp/
+
+# Local application settings
+appsettings.Development.json
+appsettings.local.json
+
+# Certificates and keys
+*.pfx
+*.pem
+*.key
+*.crt
+*.cer
+
+# NuGet lock files
+packages.lock.json
+
+# Generated documentation
+docs/_build/
+site/
+
+# Test results
+TestResults/
+*.trx
+
+# Coverage reports
+OpenCover/
+CodeCoverage/
+
+# Custom documentation files (keep only README.md)
+DEBUG_AND_FIX_SUMMARY.md
+CHANGES_MADE.md
+COMPLETE_RESOLUTION_REPORT.md
+COMPLETION_CHECKLIST.md
+DEBUG_AND_FIX_SUMMARY.md
+README_RESOLUTION.md
+SESSION_SUMMARY.md
+START_HERE.md
+RUN_SERVER_EXTERNAL.ps1
