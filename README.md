@@ -52,18 +52,19 @@ The server will start on `http://localhost:5000`.
 ```
 DotnetFastMCP/
 ├── src/
-│   └── FastMCP/
-│       ├── Attributes/          # Component declaration attributes
-│       ├── Hosting/             # Server hosting and middleware
-│       ├── Protocol/            # JSON-RPC protocol implementation
-│       ├── Server/              # FastMCPServer core class
-│       └── FastMCP.csproj
+│   ├── FastMCP/
+│   │   ├── Attributes/          # Component declaration attributes
+│   │   ├── Hosting/             # Server hosting and middleware
+│   │   ├── Protocol/            # JSON-RPC protocol implementation
+│   │   ├── Server/              # FastMCPServer core class
+│   │   └── FastMCP.csproj
+│   └── FastMCP.CLI/             # Command-line utilities
 ├── examples/
 │   └── BasicServer/             # Example MCP server implementation
 ├── tests/
 │   └── McpIntegrationTest/      # Integration tests
-└── src/
-    └── FastMCP.CLI/             # Command-line utilities
+├── LAUNCH_TESTS.ps1             # PowerShell test suite launcher
+└── RUN_AND_TEST.ps1             # PowerShell integration test script
 ```
 
 ### Project Structure
@@ -79,22 +80,34 @@ DotnetFastMCP/
 
 ### 1. Define Components
 
-Create a class with tool and resource methods:
+For better organization, split your components into multiple files (e.g., `Tools.cs`, `Resources.cs`). The framework will discover them automatically.
 
+**File: `Tools.cs`**
 ```csharp
 using FastMCP.Attributes;
 
-public static class ServerComponents
+public static class Tools
 {
     /// <summary>
     /// Adds two integers together.
     /// </summary>
     [McpTool]
-    public static int Add(int a, int b)
-    {
-        return a + b;
-    }
+    public static int Add(int a, int b) => a + b;
 
+    /// <summary>
+    /// Returns a greeting for the given name.
+    /// </summary>
+    [McpTool]
+    public static string Greet(string name) => $"Hello, {name}!";
+}
+```
+
+**File: `Resources.cs`**
+```csharp
+using FastMCP.Attributes;
+
+public static class Resources
+{
     /// <summary>
     /// Returns server configuration.
     /// </summary>
@@ -203,13 +216,29 @@ dotnet publish -c Release
 
 ## 🧪 Testing
 
-### Run Tests
+### Run Unit & Integration Tests
 
 ```bash
 dotnet test
 ```
 
-### Example Test
+### PowerShell Integration Test Suite
+
+The project includes a comprehensive PowerShell-based integration test suite that validates a running server end-to-end.
+
+1.  **Publish the server** (from the root of the `DotnetFastMCP` project):
+    ```sh
+    dotnet publish -c Release -o ..\publish examples\BasicServer
+    ```
+
+2.  **Run the tests**:
+    Open a PowerShell terminal and run the launcher script from the project root:
+    ```powershell
+    .\LAUNCH_TESTS.ps1
+    ```
+This will open a new window, start the `BasicServer`, and run a series of tests covering all tools and resources, including error handling.
+
+### Example Manual Test
 
 ```powershell
 # Test Add tool with array parameters
@@ -290,15 +319,15 @@ The framework automatically registers the MCP protocol middleware:
 
 ### GET `/`
 
-Returns server metadata:
+Returns server metadata. The example server returns:
 
 ```
 GET http://localhost:5000/
 HTTP/1.1 200 OK
 
-MCP Server 'Server Name' is running.
-Registered Tools: 2
-Registered Resources: 1
+MCP Server 'My First Dotnet MCP Server' is running.
+Registered Tools: 3
+Registered Resources: 3
 ```
 
 ### POST `/mcp`

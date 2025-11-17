@@ -103,11 +103,32 @@ OpenApiMcpConverter.RegisterFromOpenApi(openApiStream, server, "https://api.exam
 
 ### 7. **Example Project**
 - **Project**: `examples/BasicServer`
-- **Description**: Demonstrates how to create and run a simple MCP server.
+- **Description**: Demonstrates how to create and run a simple MCP server with components split into multiple files (`Tools.cs`, `Resources.cs`) for better organization.
 - **Components**:
-  - `Add` tool: Adds two integers
-  - `GetConfig` resource: Returns server configuration
+  - **Tools (`Tools.cs`)**:
+    - `Add`: Adds two integers.
+    - `Multiply`: Multiplies two integers.
+    - `Greet`: Returns a greeting string.
+  - **Resources (`Resources.cs`)**:
+    - `GetConfig`: Returns server configuration.
+    - `GetFeatures`: Returns a list of supported features.
+    - `GetServerTime`: Returns the current server time.
 - **Usage**: `dotnet run --project examples/BasicServer/BasicServer.csproj`
+
+### 8. **Integration Testing**
+- **Scripts**: `RUN_AND_TEST.ps1`, `LAUNCH_TESTS.ps1`
+- **Description**: A comprehensive PowerShell-based test suite that performs end-to-end validation of a running MCP server.
+- **Features**:
+  - Starts the `BasicServer` automatically.
+  - Waits for the server to be available.
+  - Executes a series of tests against the live `/mcp` endpoint.
+  - Validates successful responses and correct error handling.
+  - Provides a detailed summary of passed and failed tests.
+- **Tests Covered**:
+  - Root endpoint health check (`GET /`)
+  - Tool invocation with positional (array) and named (object) parameters
+  - Resource retrieval for all defined resources
+  - JSON-RPC error handling for non-existent methods
 
 ## Architecture Overview
 
@@ -124,7 +145,9 @@ DotnetFastMCP/
 │   └── FastMCP.OpenApi/         # OpenAPI integration
 ├── examples/
 │   └── BasicServer/             # Sample MCP server
-└── tests/                        # Test projects (future)
+├── tests/                        # Test projects (future)
+└── RUN_AND_TEST.ps1              # Main integration test script
+└── LAUNCH_TESTS.ps1              # Launcher for the test script
 ```
 
 ### Protocol Layer
@@ -186,23 +209,30 @@ DotnetFastMCP/
 
 ### Creating Your First Server
 
+Follow these steps to create a server with organized components.
+
 ```csharp
 // 1. Create a new console application project
-// 2. Add reference to FastMCP NuGet package
-// 3. Create your tool methods
+// 2. Add a reference to the FastMCP NuGet package
+// 3. Create your component files (e.g., Tools.cs, Resources.cs)
 
+// File: Tools.cs
 using FastMCP.Attributes;
-
 public static class MyTools
 {
     [McpTool]
     public static string Greet(string name) => $"Hello, {name}!";
+}
 
+// File: Resources.cs
+using FastMCP.Attributes;
+public static class MyResources
+{
     [McpResource("resource://status")]
     public static object GetStatus() => new { online = true };
 }
 
-// 4. Configure and run the server
+// 4. Configure and run the server in Program.cs
 
 using FastMCP.Hosting;
 using FastMCP.Server;
@@ -210,7 +240,7 @@ using System.Reflection;
 
 var server = new FastMCPServer("Greeting Service");
 var builder = McpServerBuilder.Create(server, args);
-builder.WithComponentsFrom(typeof(MyTools).Assembly);
+builder.WithComponentsFrom(Assembly.GetExecutingAssembly()); // Discovers all components
 var app = builder.Build();
 await app.RunAsync();
 ```
@@ -243,6 +273,8 @@ Expected response:
 - ✅ Core framework scaffolding
 - ✅ JSON-RPC 2.0 protocol handling
 - ✅ Component discovery and registration
+- ✅ Example project with multiple components
+- ✅ Integration test suite (PowerShell)
 - ✅ OpenAPI integration foundation
 - ✅ CLI skeleton
 - 🔄 Enhanced OpenAPI HTTP invocation
