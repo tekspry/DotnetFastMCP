@@ -5,8 +5,14 @@ using Microsoft.Extensions.DependencyInjection;
 using System.Reflection;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
-using FastMCP.Authentication.Proxy;  // For OAuthProxy
-using FastMCP.Authentication.Core;   // For ITokenVerifier
+using FastMCP.Authentication.Proxy;
+using FastMCP.Authentication.Core;
+using Microsoft.Extensions.Logging;
+using System.Threading.RateLimiting;
+using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Cors.Infrastructure;
+using FastMCP.Authentication.McpEndpoints;
 
 namespace FastMCP.Hosting;
 
@@ -18,7 +24,7 @@ public class McpServerBuilder
 {
     private readonly WebApplicationBuilder _webAppBuilder;
     private readonly FastMCPServer _mcpServer;
-    private string? _defaultChallengeScheme;  
+    private string? _defaultChallengeScheme;
 
     private McpServerBuilder(FastMCPServer mcpServer, string[]? args)
     {
@@ -27,35 +33,71 @@ public class McpServerBuilder
         _webAppBuilder.Services.AddSingleton(_mcpServer);
 
         // --- Core Authentication and Authorization Setup ---
-        // Adds authentication services with a default cookie scheme for session management.
         _webAppBuilder.Services.AddAuthentication(options =>
         {
             options.DefaultScheme = McpAuthenticationConstants.ApplicationScheme;
-            options.DefaultChallengeScheme = McpAuthenticationConstants.ChallengeScheme; // Default challenge for unauthenticated access
+            options.DefaultChallengeScheme = "Bearer";  // Default to Bearer for APIs
         })
-        .AddCookie(McpAuthenticationConstants.ApplicationScheme); // Configures cookie authentication
+        .AddCookie(McpAuthenticationConstants.ApplicationScheme);
 
-        // Adds authorization services. Policies will be configured via WithAuthorization.
         _webAppBuilder.Services.AddAuthorization();
         // --- End Core Authentication and Authorization Setup ---
 
-         _webAppBuilder.Services.AddCors(options =>
-         {
+        // --- Rate Limiting Setup ---
+        _webAppBuilder.Services.AddRateLimiter(rateLimiterOptions =>
+        {
+            rateLimiterOptions.AddFixedWindowLimiter("oauth-token", options =>
+            {
+                options.PermitLimit = 10;
+                options.Window = TimeSpan.FromMinutes(1);
+                options.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+                options.QueueLimit = 2;
+            });
+
+            rateLimiterOptions.AddFixedWindowLimiter("oauth-register", options =>
+            {
+                options.PermitLimit = 5;
+                options.Window = TimeSpan.FromHours(1);
+                options.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+                options.QueueLimit = 1;
+            });
+
+            rateLimiterOptions.AddFixedWindowLimiter("oauth-authorize", options =>
+            {
+                options.PermitLimit = 30;
+                options.Window = TimeSpan.FromMinutes(1);
+                options.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+                options.QueueLimit = 5;
+            });
+
+            rateLimiterOptions.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+        });
+        // --- End Rate Limiting Setup ---
+
+        // --- CORS Setup ---
+        _webAppBuilder.Services.AddCors(options =>
+        {
             options.AddPolicy("OAuthPolicy", policy =>
             {
                 policy
-                .AllowAnyOrigin()
-                .AllowAnyMethod()
-                .AllowAnyHeader()
-                .WithExposedHeaders("WWW-Authenticate", "XOAuth-Scopes");        
-            });            
+                    .WithOrigins("http://localhost:*", "http://127.0.0.1:*")
+                    .AllowAnyMethod()
+                    .AllowAnyHeader()
+                    .AllowCredentials()
+                    .WithExposedHeaders("WWW-Authenticate", "X-OAuth-Scopes", "Location");
+            });
+        });
+        // --- End CORS Setup ---
 
-         });
-
-         var app = _webAppBuilder.Build();
-
-        // Apply CORS policy to OAuth endpoints
-        app.UseCors("OAuthPolicy");
+        // --- Logging Setup ---
+        _webAppBuilder.Services.AddLogging(config =>
+        {
+            config.AddConsole();
+            config.SetMinimumLevel(LogLevel.Information);
+            config.AddFilter("FastMCP.Authentication", LogLevel.Debug);
+            config.AddFilter("FastMCP.Authentication.Proxy", LogLevel.Debug);
+        });
+        // --- End Logging Setup ---
     }
 
     /// <summary>
@@ -86,7 +128,7 @@ public class McpServerBuilder
                 _mcpServer.Resources.Add(method);
             }
         }
-        
+
         return this;
     }
 
@@ -94,28 +136,22 @@ public class McpServerBuilder
     /// Allows direct configuration of the internal AuthenticationBuilder for advanced scenarios
     /// or adding custom authentication schemes.
     /// </summary>
-    /// <param name="configure">An action to configure the <see cref="AuthenticationBuilder"/>.</param>
     public McpServerBuilder WithAuthentication(Action<AuthenticationBuilder> configure)
     {
-        // AddAuthentication() returns the builder itself, so we call it to get the instance
-        // then invoke the configure action.
         configure(_webAppBuilder.Services.AddAuthentication());
         return this;
     }
 
-     /// <summary>
+    /// <summary>
     /// Sets the default challenge scheme for authentication.
-    /// This is typically called automatically when token verifiers are registered.
     /// </summary>
-    /// <param name="schemeName">The authentication scheme name to use as default challenge.</param>
     public McpServerBuilder WithDefaultChallengeScheme(string schemeName)
     {
         if (string.IsNullOrEmpty(schemeName))
             throw new ArgumentException("Scheme name cannot be null or empty", nameof(schemeName));
 
         _defaultChallengeScheme = schemeName;
-        
-        // Update the authentication options
+
         _webAppBuilder.Services.Configure<AuthenticationOptions>(options =>
         {
             options.DefaultChallengeScheme = schemeName;
@@ -127,10 +163,85 @@ public class McpServerBuilder
     /// <summary>
     /// Allows configuration of authorization policies for the MCP server.
     /// </summary>
-    /// <param name="configure">An action to configure the <see cref="AuthorizationOptions"/>.</param>
     public McpServerBuilder WithAuthorization(Action<AuthorizationOptions> configure)
     {
         _webAppBuilder.Services.AddAuthorization(configure);
+        return this;
+    }
+
+    /// <summary>
+    /// Configures CORS policy for OAuth and MCP endpoints.
+    /// </summary>
+    public McpServerBuilder WithCorsPolicy(string[]? allowedOrigins = null, bool allowCredentials = true)
+    {
+        _webAppBuilder.Services.Configure<CorsOptions>(options =>
+        {
+            options.AddPolicy("OAuthPolicy", policy =>
+            {
+                if (allowedOrigins != null && allowedOrigins.Length > 0)
+                {
+                    policy.WithOrigins(allowedOrigins);
+                }
+                else
+                {
+                    policy.SetIsOriginAllowed(_ => true);  // For development only
+                }
+
+                policy
+                    .AllowAnyMethod()
+                    .AllowAnyHeader()
+                    .WithExposedHeaders("WWW-Authenticate", "X-OAuth-Scopes", "Location");
+
+                if (allowCredentials)
+                {
+                    policy.AllowCredentials();
+                }
+            });
+        });
+
+        return this;
+    }
+
+    /// <summary>
+    /// Configures OAuth Proxy for providers that don't support DCR.
+    /// </summary>
+    public McpServerBuilder WithOAuthProxy(
+        OAuthProxyOptions options,
+        ITokenVerifier tokenVerifier,
+        IClientStore? clientStore = null)
+    {
+        if (options == null)
+            throw new ArgumentNullException(nameof(options));
+        if (tokenVerifier == null)
+            throw new ArgumentNullException(nameof(tokenVerifier));
+
+        // Register OAuthProxyOptions
+        _webAppBuilder.Services.AddSingleton(options);
+
+        // Register ITokenVerifier (if not already registered)
+        if (!_webAppBuilder.Services.Any(x => x.ServiceType == typeof(ITokenVerifier)))
+        {
+            _webAppBuilder.Services.AddSingleton(tokenVerifier);
+        }
+
+        // Register IClientStore (ensure it's available)
+        if (!_webAppBuilder.Services.Any(x => x.ServiceType == typeof(IClientStore)))
+        {
+            clientStore ??= new InMemoryClientStore();
+            _webAppBuilder.Services.AddSingleton<IClientStore>(clientStore);
+        }
+
+        // Register the OAuthProxy service
+        var proxy = new OAuthProxy(
+            options,
+            tokenVerifier,
+            clientStore ?? new InMemoryClientStore());
+
+        _webAppBuilder.Services.AddSingleton(proxy);
+
+        // Set default challenge scheme to Bearer for OAuth
+        WithDefaultChallengeScheme("Bearer");
+
         return this;
     }
 
@@ -141,8 +252,13 @@ public class McpServerBuilder
     {
         var app = _webAppBuilder.Build();
 
+        // Apply CORS middleware BEFORE authentication
+        app.UseCors("OAuthPolicy");
+
+        // Apply rate limiting middleware
+        app.UseRateLimiter();
+
         // CRITICAL: Authentication must run before authorization
-        // This ensures bearer tokens are authenticated before the MCP middleware checks authorization
         app.UseAuthentication();
         app.UseAuthorization();
 
@@ -156,16 +272,15 @@ public class McpServerBuilder
         // Register the MCP protocol middleware for /mcp endpoints
         app.UseMcpProtocol();
 
-         // Register MCP OAuth discovery endpoints
-        // Try to get the token verifier from DI if available
+        // Register MCP OAuth discovery endpoints
         var tokenVerifier = app.Services.GetService<ITokenVerifier>();
         app.MapMcpAuthEndpoints(
             mcpPath: "/mcp",
-            baseUrl: null, // Will be determined from request
+            baseUrl: null,
             tokenVerifier: tokenVerifier);
 
         // Root endpoint returns server metadata
-        app.MapGet("/", () => 
+        app.MapGet("/", () =>
             $"MCP Server '{_mcpServer.Name}' is running.\n" +
             $"Registered Tools: {_mcpServer.Tools.Count}\n" +
             $"Registered Resources: {_mcpServer.Resources.Count}");
@@ -173,26 +288,7 @@ public class McpServerBuilder
         return app;
     }
 
-    /// <summary>
-    /// Configures OAuth Proxy for providers that don't support DCR.
-    /// </summary>
-    public McpServerBuilder WithOAuthProxy(
-        OAuthProxyOptions options,
-        ITokenVerifier tokenVerifier,
-        IClientStore? clientStore = null)
-    {
-        var proxy = new OAuthProxy(options, tokenVerifier, clientStore);
-        
-        // Register the proxy as a service
-        _webAppBuilder.Services.AddSingleton(proxy);
-        
-        // Map OAuth endpoints in Build method
-        // (We'll handle this in the Build method)
-        
-        return this;
-    }
-
-     // Internal helper to expose the WebApplicationBuilder for extension methods (e.g., in McpAuthenticationExtensions)
+    // Internal helper to expose the WebApplicationBuilder for extension methods
     internal WebApplicationBuilder GetWebAppBuilder()
     {
         return _webAppBuilder;

@@ -140,10 +140,20 @@ public class GoogleTokenVerifier : ITokenVerifier
                 ? audienceElement.GetString() ?? "unknown"
                 : "unknown";
 
+            string subClaim = "unknown";
+            if (userData.TryGetValue("id", out object? idValue) && idValue is string idString)
+            {
+                subClaim = idString;
+            }
+            else if (tokenInfo.TryGetProperty("user_id", out var userIdElement) && userIdElement.ValueKind == JsonValueKind.String)
+            {
+                subClaim = userIdElement.GetString() ?? "unknown";
+            }
+
             // Create AccessToken with Google user info
             var claims = new Dictionary<string, object>
-            {
-                ["sub"] = userData.GetValueOrDefault("id")?.ToString() ?? tokenInfo.TryGetProperty("user_id", out var userId) ? userId.GetString() ?? "unknown" : "unknown",
+            {                
+                ["sub"] = subClaim,
                 ["email"] = userData.GetValueOrDefault("email")?.ToString() ?? string.Empty,
                 ["name"] = userData.GetValueOrDefault("name")?.ToString() ?? string.Empty,
                 ["picture"] = userData.GetValueOrDefault("picture")?.ToString() ?? string.Empty,

@@ -32,7 +32,9 @@ public static class McpAuthEndpoints
         string? baseUrl = null,
         ITokenVerifier? tokenVerifier = null)
     {
-        var logger = app.Services.GetRequiredService<ILogger<McpAuthEndpoints>>();
+        
+        var logger = app.Services.GetRequiredService<ILogger<McpAuthEndpointsLogger>>(); 
+        
         
         // Get base URL from request if not provided
         baseUrl ??= app.Urls.FirstOrDefault() ?? "http://localhost:5000";
@@ -137,3 +139,5 @@ public static class McpAuthEndpoints
         logger.LogInformation("MCP OAuth endpoints registered at /.well-known/oauth-authorization-server and {McpPath}/.well-known/protected-resource", mcpPath);
     }
 }
+
+internal class McpAuthEndpointsLogger { }

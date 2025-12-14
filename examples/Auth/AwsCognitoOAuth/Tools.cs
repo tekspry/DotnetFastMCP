@@ -2,10 +2,13 @@ using FastMCP.Attributes;
 using Microsoft.AspNetCore.Authorization;
 using System.Security.Claims;
 
-namespace AwsCognitoOAuthServer.Tools;  // Change namespace per provider
+namespace AwsCognitoOAuthServer.Tools;
 
 public static class Tools
 {
+    /// <summary>
+    /// Echo tool - demonstrates basic authenticated tool access.
+    /// </summary>
     [McpTool]
     [Authorize]
     public static string Echo(string message)
@@ -13,6 +16,9 @@ public static class Tools
         return $"Echo: {message}";
     }
 
+    /// <summary>
+    /// Get user info - demonstrates accessing authenticated user claims.
+    /// </summary>
     [McpTool]
     [Authorize]
     public static Dictionary<string, string> GetUserInfo(ClaimsPrincipal user)
@@ -26,14 +32,15 @@ public static class Tools
         };
     }
 
-    // Optional: Provider-specific claim examples
+    /// <summary>
+    /// Get provider-specific info - demonstrates accessing AWS Cognito claims.
+    /// </summary>
     [McpTool]
     [Authorize]
     public static Dictionary<string, string> GetProviderSpecificInfo(ClaimsPrincipal user)
     {
         var info = new Dictionary<string, string>();
         
-        // These claims vary by provider, but the code structure is the same
         info["Email"] = user.FindFirst(ClaimTypes.Email)?.Value ?? 
                        user.FindFirst("email")?.Value ?? 
                        user.FindFirst("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress")?.Value ?? 
@@ -43,16 +50,17 @@ public static class Tools
                          user.FindFirst("sub")?.Value ?? 
                          "Not available";
         
-        // Provider-specific claims (examples)
-        // Google: "picture", "locale"
-        // GitHub: "avatar_url", "login"
-        // Azure AD: "oid", "tid"
-        // Auth0: "sub", "email_verified"
-        // Okta: "sub", "preferred_username"
+        // AWS Cognito specific claims examples
+        info["Cognito Username"] = user.FindFirst("cognito:username")?.Value ?? "Not available";
+        info["Given Name"] = user.FindFirst(ClaimTypes.GivenName)?.Value ?? "Not available";
+        info["Family Name"] = user.FindFirst(ClaimTypes.Surname)?.Value ?? "Not available";
         
         return info;
     }
 
+    /// <summary>
+    /// Public tool - no authentication required.
+    /// </summary>
     [McpTool]
     public static string PublicEcho(string message)
     {
