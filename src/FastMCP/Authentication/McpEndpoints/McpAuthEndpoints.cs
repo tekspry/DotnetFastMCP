@@ -136,7 +136,36 @@ public static class McpAuthEndpoints
         .WithName("ProtectedResourceMetadata")
         .AllowAnonymous();
 
-        logger.LogInformation("MCP OAuth endpoints registered at /.well-known/oauth-authorization-server and {McpPath}/.well-known/protected-resource", mcpPath);
+        // JWKS Endpoint (JSON Web Key Set) - RFC 7517
+        app.MapGet("/.well-known/jwks.json", async (HttpContext context) =>
+        {
+            try
+            {
+                // If using JWT-based token verifier (e.g., for Azure AD, Auth0, Okta),
+                // we need to return the JWKS from the upstream provider or cached keys.
+                // For now, we return an empty key set as the actual validation happens
+                // at the upstream provider (Azure AD, Auth0, etc.)
+                var jwks = new
+                {
+                    keys = new List<object>()
+                };
+
+                context.Response.ContentType = "application/json";
+                await JsonSerializer.SerializeAsync(context.Response.Body, jwks, new JsonSerializerOptions
+                {
+                    PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+                });
+            }
+            catch (Exception ex)
+            {
+                logger?.LogError(ex, "Error returning JWKS endpoint");
+                context.Response.StatusCode = StatusCodes.Status500InternalServerError;
+            }
+        })
+        .WithName("JwksEndpoint")
+        .AllowAnonymous();
+
+        logger.LogInformation("MCP OAuth endpoints registered at /.well-known/oauth-authorization-server, /.well-known/jwks.json, and {McpPath}/.well-known/protected-resource", mcpPath);
     }
 }
 

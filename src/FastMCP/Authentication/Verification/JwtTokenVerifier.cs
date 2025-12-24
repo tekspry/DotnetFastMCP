@@ -10,6 +10,8 @@ using System.Threading.Tasks;
 using FastMCP.Authentication.Core;
 using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.IdentityModel.Protocols; // Add this using directive
+using Microsoft.IdentityModel.Protocols.OpenIdConnect; // Add this using directive
 
 namespace FastMCP.Authentication.Verification;
 
@@ -27,8 +29,7 @@ public class JwtTokenVerifier : ITokenVerifier
     private readonly IReadOnlyList<string> _requiredScopes;
     private readonly ILogger<JwtTokenVerifier>? _logger;
     private readonly HttpClient _httpClient;
-    private JsonWebKeySet? _cachedKeySet;
-    private DateTimeOffset? _keySetExpiry;
+    private readonly ConfigurationManager<OpenIdConnectConfiguration> _configurationManager; // ADD THIS
 
     /// <summary>
     /// Initializes a new instance of the JwtTokenVerifier.
@@ -40,6 +41,7 @@ public class JwtTokenVerifier : ITokenVerifier
     /// <param name="requiredScopes">Required OAuth scopes for all tokens (optional).</param>
     /// <param name="logger">Optional logger for diagnostics.</param>
     /// <param name="httpClient">Optional HttpClient instance. If not provided, a new instance will be created.</param>
+    /// <param name="openIdConnectConfigurationUrl">Optional explicit URL for OpenID Connect configuration. If not provided, it is inferred from jwksUri.</param>
     public JwtTokenVerifier(
         string jwksUri,
         string? issuer = null,
@@ -47,7 +49,8 @@ public class JwtTokenVerifier : ITokenVerifier
         string algorithm = SecurityAlgorithms.RsaSha256,
         IReadOnlyList<string>? requiredScopes = null,
         ILogger<JwtTokenVerifier>? logger = null,
-        HttpClient? httpClient = null)
+        HttpClient? httpClient = null,
+        string? openIdConnectConfigurationUrl = null)
     {
         _jwksUri = jwksUri ?? throw new ArgumentNullException(nameof(jwksUri));
         _issuer = issuer;
@@ -56,6 +59,20 @@ public class JwtTokenVerifier : ITokenVerifier
         _requiredScopes = requiredScopes ?? Array.Empty<string>();
         _logger = logger;
         _httpClient = httpClient ?? new HttpClient();
+
+        // Initialize ConfigurationManager to fetch and cache OpenIdConnectConfiguration
+        // This implicitly handles fetching the JWKS from the jwksUri
+        // If explicit configuration URL is not provided, we infer it from JWKS URI
+        var configUrl = openIdConnectConfigurationUrl;
+        if (string.IsNullOrEmpty(configUrl))
+        {
+             configUrl = jwksUri.Replace("/keys", "") + "/.well-known/openid-configuration";
+        }
+
+        _configurationManager = new ConfigurationManager<OpenIdConnectConfiguration>(
+            configUrl,
+            new OpenIdConnectConfigurationRetriever(),
+            _httpClient);
     }
 
     /// <inheritdoc/>
@@ -72,11 +89,11 @@ public class JwtTokenVerifier : ITokenVerifier
 
         try
         {
-            // Get or refresh the JWKS
-            var keySet = await GetOrRefreshKeySetAsync(cancellationToken);
-            if (keySet == null)
+            // Get the OpenIdConnectConfiguration, which contains the signing keys
+            var config = await _configurationManager.GetConfigurationAsync(cancellationToken);
+            if (config?.SigningKeys == null || !config.SigningKeys.Any())
             {
-                _logger?.LogWarning("Failed to retrieve JWKS from {JwksUri}", _jwksUri);
+                _logger?.LogWarning("Failed to retrieve signing keys from OpenIdConnectConfiguration.");
                 return null;
             }
 
@@ -89,9 +106,28 @@ public class JwtTokenVerifier : ITokenVerifier
                 ValidAudience = _audience,
                 ValidateLifetime = true,
                 ValidateIssuerSigningKey = true,
-                IssuerSigningKeys = keySet.GetSigningKeys(),
+                IssuerSigningKeys = config.SigningKeys, // USE KEYS FROM CONFIGURATION MANAGER
                 ClockSkew = TimeSpan.FromMinutes(5) // Allow 5 minutes clock skew
             };
+
+            // ADD THESE DIAGNOSTIC LOGS
+            var jwtHandler = new JwtSecurityTokenHandler();
+            if (jwtHandler.CanReadToken(token))
+            {
+                 var jwt = jwtHandler.ReadJwtToken(token);
+                 _logger?.LogWarning($"[JwtTokenVerifier] Incoming Token KID: {jwt.Header.Kid}");
+                 _logger?.LogWarning($"[JwtTokenVerifier] Incoming Token Issuer: {jwt.Issuer}");
+            }
+
+            _logger?.LogDebug($"[JwtTokenVerifier] TokenValidationParameters initialized. ValidateIssuerSigningKey: {validationParameters.ValidateIssuerSigningKey}");
+            _logger?.LogDebug($"[JwtTokenVerifier] Number of IssuerSigningKeys set in TokenValidationParameters: {validationParameters.IssuerSigningKeys?.Count() ?? 0}");
+            if (validationParameters.IssuerSigningKeys != null)
+            {
+                foreach (var key in validationParameters.IssuerSigningKeys)
+                {
+                    _logger?.LogDebug($"[JwtTokenVerifier] Key in validationParameters: Type={key.GetType().Name}, Kid={key.KeyId}");
+                }
+            }
 
             // Validate the token
             var handler = new JwtSecurityTokenHandler();
@@ -189,34 +225,6 @@ public class JwtTokenVerifier : ITokenVerifier
             _logger?.LogError(ex, "Unexpected error during token verification");
             return null;
         }
-    }
-
-    private async Task<JsonWebKeySet?> GetOrRefreshKeySetAsync(CancellationToken cancellationToken)
-    {
-        // Refresh if cache is expired or doesn't exist
-        if (_cachedKeySet == null || _keySetExpiry == null || DateTimeOffset.UtcNow >= _keySetExpiry.Value)
-        {
-            try
-            {
-                var response = await _httpClient.GetAsync(_jwksUri, cancellationToken);
-                response.EnsureSuccessStatusCode();
-
-                var json = await response.Content.ReadAsStringAsync(cancellationToken);
-                _cachedKeySet = new JsonWebKeySet(json);
-                
-                // Cache for 1 hour (JWKS typically doesn't change frequently)
-                _keySetExpiry = DateTimeOffset.UtcNow.AddHours(1);
-
-                _logger?.LogDebug("Successfully fetched and cached JWKS from {JwksUri}", _jwksUri);
-            }
-            catch (Exception ex)
-            {
-                _logger?.LogError(ex, "Failed to fetch JWKS from {JwksUri}", _jwksUri);
-                return _cachedKeySet; // Return cached version if available
-            }
-        }
-
-        return _cachedKeySet;
     }
 
     private IReadOnlyList<string> ExtractScopes(JwtSecurityToken jwtToken)

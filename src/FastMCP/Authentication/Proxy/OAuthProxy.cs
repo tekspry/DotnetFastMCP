@@ -235,13 +235,15 @@ public class OAuthProxy : IMcpAuthProvider
     {
         if (!_clientCodes.TryGetValue(code, out var clientCode))
         {
-            throw new InvalidOperationException("Invalid or expired authorization code");
+            _logger?.LogWarning("Client code not found. Received: {Code}. Available codes: {Count}", code, _clientCodes.Count);
+            throw new InvalidOperationException($"Invalid or expired authorization code. Received: {code}, Available: {_clientCodes.Count}");
         }
 
         // Validate redirect URI
         if (clientCode.RedirectUri != redirectUri)
         {
-            throw new InvalidOperationException("Redirect URI mismatch");
+            _logger?.LogWarning("Redirect URI mismatch. Expected: {Expected}, Received: {Received}", clientCode.RedirectUri, redirectUri);
+            throw new InvalidOperationException($"Redirect URI mismatch. Expected: {clientCode.RedirectUri}, Received: {redirectUri}");
         }
 
         // Validate PKCE if present
@@ -273,7 +275,8 @@ public class OAuthProxy : IMcpAuthProvider
             TokenType = clientCode.UpstreamTokens.TokenType ?? "Bearer",
             ExpiresIn = clientCode.UpstreamTokens.ExpiresIn,
             RefreshToken = clientCode.UpstreamTokens.RefreshToken,
-            Scope = string.Join(" ", clientCode.Scopes)
+            Scope = string.Join(" ", clientCode.Scopes),
+            IdToken = clientCode.UpstreamTokens.IdToken
         };
 
         // Clean up one-time use code
@@ -300,7 +303,8 @@ public class OAuthProxy : IMcpAuthProvider
             TokenType = tokenResponse.TokenType ?? "Bearer",
             ExpiresIn = tokenResponse.ExpiresIn,
             RefreshToken = tokenResponse.RefreshToken ?? refreshToken, // Use new refresh token if provided
-            Scope = tokenResponse.Scope
+            Scope = tokenResponse.Scope,
+            IdToken = tokenResponse.IdToken
         };
     }
 
@@ -385,6 +389,9 @@ public class OAuthProxy : IMcpAuthProvider
                     : null,
                 Scope = tokenData.TryGetProperty("scope", out var scope)
                     ? scope.GetString()
+                    : null,
+                IdToken = tokenData.TryGetProperty("id_token", out var idToken)
+                    ? idToken.GetString()
                     : null
             };
         }
@@ -431,6 +438,9 @@ public class OAuthProxy : IMcpAuthProvider
                     : refreshToken,  // Use original if not provided
                 Scope = tokenData.TryGetProperty("scope", out var scope)
                     ? scope.GetString()
+                    : null,
+                IdToken = tokenData.TryGetProperty("id_token", out var idToken)
+                    ? idToken.GetString()
                     : null
             };
         }
@@ -543,6 +553,7 @@ public class OAuthProxy : IMcpAuthProvider
         public int? ExpiresIn { get; set; }
         public string? RefreshToken { get; set; }
         public string? Scope { get; set; }
+        public string? IdToken { get; set; }
     }
 
     public class OAuthTokenResponse
@@ -558,5 +569,6 @@ public class OAuthProxy : IMcpAuthProvider
         public int? ExpiresIn { get; set; }
         public string? RefreshToken { get; set; }
         public string? Scope { get; set; }
+        public string? IdToken { get; set; }
     }
 }

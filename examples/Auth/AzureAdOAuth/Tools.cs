@@ -11,9 +11,14 @@ public static class Tools
     /// </summary>
     [McpTool]
     [Authorize]
-    public static string Echo(string message)
+    public static Task<object> Echo(string message)
     {
-        return $"Echo: {message}";
+        return Task.FromResult<object>(new
+        {
+            message = $"Echo: {message}",
+            authenticated = true,
+            timestamp = DateTime.UtcNow
+        });
     }
 
     /// <summary>
@@ -21,15 +26,15 @@ public static class Tools
     /// </summary>
     [McpTool]
     [Authorize]
-    public static Dictionary<string, string> GetUserInfo(ClaimsPrincipal user)
+    public static Task<object> GetUserInfo(ClaimsPrincipal user)
     {
-        return new Dictionary<string, string>
+        return Task.FromResult<object>(new
         {
-            { "Name", user.Identity?.Name ?? "Unknown" },
-            { "IsAuthenticated", user.Identity?.IsAuthenticated.ToString() ?? "False" },
-            { "AuthenticationType", user.Identity?.AuthenticationType ?? "None" },
-            { "Claims", string.Join(", ", user.Claims.Select(c => $"{c.Type}={c.Value}")) }
-        };
+            name = user.Identity?.Name ?? "Unknown",
+            isAuthenticated = user.Identity?.IsAuthenticated ?? false,
+            authenticationType = user.Identity?.AuthenticationType ?? "None",
+            claims = user.Claims.Select(c => new { type = c.Type, value = c.Value }).ToList()
+        });
     }
 
     /// <summary>
@@ -37,33 +42,38 @@ public static class Tools
     /// </summary>
     [McpTool]
     [Authorize]
-    public static Dictionary<string, string> GetProviderSpecificInfo(ClaimsPrincipal user)
+    public static Task<object> GetProviderSpecificInfo(ClaimsPrincipal user)
     {
-        var info = new Dictionary<string, string>();
-        
-        info["Email"] = user.FindFirst(ClaimTypes.Email)?.Value ?? 
-                       user.FindFirst("email")?.Value ?? 
-                       user.FindFirst("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress")?.Value ?? 
-                       "Not available";
-        
-        info["Subject"] = user.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? 
-                         user.FindFirst("sub")?.Value ?? 
-                         "Not available";
-        
-        // Azure AD specific claims examples
-        info["Object ID"] = user.FindFirst("http://schemas.microsoft.com/identity/claims/objectidentifier")?.Value ?? "Not available";
-        info["Tenant ID"] = user.FindFirst("http://schemas.microsoft.com/identity/claims/tenantid")?.Value ?? "Not available";
-        info["Preferred Username"] = user.FindFirst("preferred_username")?.Value ?? "Not available";
-        
-        return info;
+        return Task.FromResult<object>(new
+        {
+            email = user.FindFirst(ClaimTypes.Email)?.Value ?? 
+                   user.FindFirst("email")?.Value ?? 
+                   user.FindFirst("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress")?.Value ?? 
+                   "Not available",
+            
+            subject = user.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? 
+                     user.FindFirst("sub")?.Value ?? 
+                     "Not available",
+            
+            // Azure AD specific claims
+            objectId = user.FindFirst("http://schemas.microsoft.com/identity/claims/objectidentifier")?.Value ?? "Not available",
+            tenantId = user.FindFirst("http://schemas.microsoft.com/identity/claims/tenantid")?.Value ?? "Not available",
+            preferredUsername = user.FindFirst("preferred_username")?.Value ?? "Not available"
+        });
     }
 
     /// <summary>
     /// Public tool - no authentication required.
     /// </summary>
     [McpTool]
-    public static string PublicEcho(string message)
+    public static Task<object> PublicEcho(string message)
+{
+    return Task.FromResult<object>(new
     {
-        return $"Public Echo: {message}";
-    }
+        message = $"Public Echo: {message}",
+        echoed = true,
+        authenticated = false,
+        timestamp = DateTime.UtcNow
+    });
+}
 }

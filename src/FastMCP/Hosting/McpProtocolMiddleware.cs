@@ -113,27 +113,54 @@ public class McpProtocolMiddleware
             }
 
             // --- Authorization Check ---
+            // Check for both AuthorizeMcpToolAttribute and standard Authorize attribute
             var authorizeAttribute = toolMethod.GetCustomAttribute<AuthorizeMcpToolAttribute>();
-            if (authorizeAttribute != null)
+            var standardAuthorizeAttribute = toolMethod.GetCustomAttribute<AuthorizeAttribute>();
+            
+            if (authorizeAttribute != null || standardAuthorizeAttribute != null)
             {
+                Console.WriteLine($"[Middleware] Authorization required for method '{request.Method}'. User: {context.User.Identity?.Name ?? "Anonymous"}, IsAuthenticated: {context.User.Identity?.IsAuthenticated}");
+                
                 var policyBuilder = new AuthorizationPolicyBuilder();
 
-                if (!string.IsNullOrEmpty(authorizeAttribute.Policy))
+                // Handle AuthorizeMcpToolAttribute (custom FastMCP attribute)
+                if (authorizeAttribute != null)
                 {
-                    policyBuilder.AddRequirements(new PolicyNameRequirement(authorizeAttribute.Policy));
+                    if (!string.IsNullOrEmpty(authorizeAttribute.Policy))
+                    {
+                        policyBuilder.AddRequirements(new PolicyNameRequirement(authorizeAttribute.Policy));
+                    }
+                    if (!string.IsNullOrEmpty(authorizeAttribute.Roles))
+                    {
+                        policyBuilder.RequireRole(authorizeAttribute.Roles.Split(',', StringSplitOptions.RemoveEmptyEntries));
+                    }
+                    if (!string.IsNullOrEmpty(authorizeAttribute.AuthenticationSchemes))
+                    {
+                        policyBuilder.AddAuthenticationSchemes(authorizeAttribute.AuthenticationSchemes.Split(',', StringSplitOptions.RemoveEmptyEntries));
+                    }
                 }
-                if (!string.IsNullOrEmpty(authorizeAttribute.Roles))
+                
+                // Handle standard Authorize attribute
+                if (standardAuthorizeAttribute != null)
                 {
-                    policyBuilder.RequireRole(authorizeAttribute.Roles.Split(',', StringSplitOptions.RemoveEmptyEntries));
-                }
-                if (!string.IsNullOrEmpty(authorizeAttribute.AuthenticationSchemes))
-                {
-                    policyBuilder.AddAuthenticationSchemes(authorizeAttribute.AuthenticationSchemes.Split(',', StringSplitOptions.RemoveEmptyEntries));
+                    if (!string.IsNullOrEmpty(standardAuthorizeAttribute.Policy))
+                    {
+                        policyBuilder.AddRequirements(new PolicyNameRequirement(standardAuthorizeAttribute.Policy));
+                    }
+                    if (!string.IsNullOrEmpty(standardAuthorizeAttribute.Roles))
+                    {
+                        policyBuilder.RequireRole(standardAuthorizeAttribute.Roles.Split(',', StringSplitOptions.RemoveEmptyEntries));
+                    }
+                    if (standardAuthorizeAttribute.AuthenticationSchemes != null)
+                    {
+                        policyBuilder.AddAuthenticationSchemes(standardAuthorizeAttribute.AuthenticationSchemes.Split(',', StringSplitOptions.RemoveEmptyEntries));
+                    }
                 }
 
                 // If no specific policy/roles/schemes are defined, it just requires an authenticated user
                 if (!policyBuilder.Requirements.Any() && policyBuilder.AuthenticationSchemes.Count == 0)
                 {
+                    Console.WriteLine($"[Middleware] No specific policy/roles/schemes, requiring authenticated user");
                     policyBuilder.RequireAuthenticatedUser();
                 }
 
@@ -239,7 +266,7 @@ public class McpProtocolMiddleware
 
         var args = new object?[methodParams.Length];
         
-        // Check if any parameter is of type ClaimsPrincipal or AccessToken
+        // First pass: Inject framework-provided parameters (ClaimsPrincipal, HttpContext, etc.)
         for (int i = 0; i < methodParams.Length; i++)
         {
             var param = methodParams[i];
@@ -247,20 +274,23 @@ public class McpProtocolMiddleware
             // Inject ClaimsPrincipal if requested
             if (param.ParameterType == typeof(ClaimsPrincipal))
             {
+                Console.WriteLine($"[BindParameters] Injecting ClaimsPrincipal at parameter '{param.Name}'. User IsAuthenticated: {user?.Identity?.IsAuthenticated}, Identity: {user?.Identity?.Name ?? "null"}");
                 args[i] = user;
-                continue;
             }
             
             // Inject AccessToken if requested (requires token verification)
             // TODO: Implement token extraction and verification if needed
         }
 
-
-        // Handle null parameters
+        // Handle null parameters - only fill in non-framework parameters
         if (rpcParams is null)
         {
             for (int i = 0; i < methodParams.Length; i++)
             {
+                // Skip parameters already set by framework injection
+                if (args[i] != null)
+                    continue;
+                    
                 var param = methodParams[i];
                 if (param.HasDefaultValue)
                 {
@@ -284,35 +314,51 @@ public class McpProtocolMiddleware
             // Handle object and array immediately within using scope
             if (paramsElement.ValueKind == JsonValueKind.Object)
             {
-                return BindObjectParameters(paramsElement, methodParams);
+                BindObjectParameters(paramsElement, methodParams, args);
+                return args;
             }
             else if (paramsElement.ValueKind == JsonValueKind.Array)
             {
-                return BindArrayParameters(paramsElement, methodParams);
+                BindArrayParameters(paramsElement, methodParams, args);
+                return args;
             }
         }
 
         // Process JsonElement directly
         if (paramsElement.ValueKind == JsonValueKind.Object)
         {
-            return BindObjectParameters(paramsElement, methodParams);
+            BindObjectParameters(paramsElement, methodParams, args);
         }
         else if (paramsElement.ValueKind == JsonValueKind.Array)
         {
-            return BindArrayParameters(paramsElement, methodParams);
+            BindArrayParameters(paramsElement, methodParams, args);
         }
         else
         {
             throw new InvalidOperationException("Parameters must be an object or an array.");
         }
+        
+        return args;
     }
 
-    private object?[] BindObjectParameters(JsonElement paramsElement, ParameterInfo[] methodParams)
+    private void BindObjectParameters(JsonElement paramsElement, ParameterInfo[] methodParams, object?[] args)
     {
-        var args = new object?[methodParams.Length];
         for (int i = 0; i < methodParams.Length; i++)
         {
             var param = methodParams[i];
+            
+            // Skip ClaimsPrincipal parameters - they are auto-injected and not JSON-RPC params
+            if (param.ParameterType == typeof(ClaimsPrincipal))
+            {
+                continue;
+            }
+            
+            // Skip if already set by framework injection
+            if (args[i] != null)
+            {
+                continue;
+            }
+            
             var paramProp = paramsElement.EnumerateObject()
                 .FirstOrDefault(p => p.Name.Equals(param.Name, StringComparison.OrdinalIgnoreCase));
             
@@ -329,16 +375,26 @@ public class McpProtocolMiddleware
                 throw new InvalidOperationException($"Missing required parameter: {param.Name}");
             }
         }
-        return args;
     }
 
-    private object?[] BindArrayParameters(JsonElement paramsElement, ParameterInfo[] methodParams)
+    private void BindArrayParameters(JsonElement paramsElement, ParameterInfo[] methodParams, object?[] args)
     {
-        var args = new object?[methodParams.Length];
         var paramsArray = paramsElement.EnumerateArray().ToList();
         
         for (int i = 0; i < methodParams.Length; i++)
         {
+            // Skip ClaimsPrincipal parameters - they are auto-injected and not JSON-RPC params
+            if (methodParams[i].ParameterType == typeof(ClaimsPrincipal))
+            {
+                continue;
+            }
+            
+            // Skip if already set by framework injection
+            if (args[i] != null)
+            {
+                continue;
+            }
+            
             if (i < paramsArray.Count)
             {
                 args[i] = paramsArray[i].Deserialize(methodParams[i].ParameterType, _jsonOptions);
@@ -352,7 +408,6 @@ public class McpProtocolMiddleware
                 throw new InvalidOperationException($"Missing required parameter: {methodParams[i].Name}");
             }
         }
-        return args;
     }
 }
 

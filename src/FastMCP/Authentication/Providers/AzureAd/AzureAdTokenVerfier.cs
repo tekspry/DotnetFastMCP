@@ -26,13 +26,15 @@ public class AzureAdTokenVerifier : ITokenVerifier
 
         var issuer = $"https://{baseAuthority}/{tenantId}/v2.0";
         var jwksUri = $"https://{baseAuthority}/{tenantId}/discovery/v2.0/keys";
+        var metadataUrl = $"https://{baseAuthority}/{tenantId}/v2.0/.well-known/openid-configuration";
 
         _jwtVerifier = new JwtTokenVerifier(
             jwksUri: jwksUri,
             issuer: issuer,
             audience: clientId,
             requiredScopes: requiredScopes,
-            logger: logger != null ? new LoggerAdapter<JwtTokenVerifier>(logger) : null);
+            logger: logger != null ? new LoggerAdapter<JwtTokenVerifier>(logger) : null,
+            openIdConnectConfigurationUrl: metadataUrl);
     }
 
     public IReadOnlyList<string> RequiredScopes => _jwtVerifier.RequiredScopes;

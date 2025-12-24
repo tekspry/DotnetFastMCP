@@ -10,6 +10,7 @@ using FastMCP.Authentication.Proxy;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace FastMCP.Authentication.Proxy;
 
@@ -156,6 +157,15 @@ public static class OAuthProxyEndpoints
         app.MapPost("/oauth/token", async (HttpContext context) =>
         {
             var form = await context.Request.ReadFormAsync();
+            
+            // Debug logging for form data
+            var logger = context.RequestServices.GetService<ILogger<OAuthProxy>>();
+            logger?.LogInformation("Token Endpoint - Received Form Data. Keys: {Keys}", string.Join(", ", form.Keys));
+            foreach (var key in form.Keys)
+            {
+                logger?.LogDebug("Form[{Key}] = {Value}", key, form[key].ToString());
+            }
+
             var grantType = form["grant_type"].ToString();
 
             try
@@ -185,7 +195,8 @@ public static class OAuthProxyEndpoints
                         token_type = tokenResponse.TokenType,
                         expires_in = tokenResponse.ExpiresIn,
                         refresh_token = tokenResponse.RefreshToken,
-                        scope = tokenResponse.Scope
+                        scope = tokenResponse.Scope,
+                        id_token = tokenResponse.IdToken
                     });
                 }
                 else if (grantType == "refresh_token")
@@ -208,7 +219,8 @@ public static class OAuthProxyEndpoints
                         token_type = tokenResponse.TokenType,
                         expires_in = tokenResponse.ExpiresIn,
                         refresh_token = tokenResponse.RefreshToken,
-                        scope = tokenResponse.Scope
+                        scope = tokenResponse.Scope,
+                        id_token = tokenResponse.IdToken
                     });
                 }
                 else
@@ -268,7 +280,7 @@ public static class OAuthProxyEndpoints
             await context.Response.WriteAsJsonAsync(userInfo);
         })
         .WithName("OpenIdUserinfo")
-        .RequireAuthorization();
+        .AllowAnonymous();
 
         // Add to OAuthProxyEndpoints.cs:
 

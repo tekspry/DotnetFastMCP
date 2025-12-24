@@ -10,8 +10,14 @@ try
     var mcpServer = new FastMCPServer(name: "Azure AD OAuth Example Server");
     var builder = McpServerBuilder.Create(mcpServer, args);
     
+    // DEBUG: Check if environment variables are visible
+    var tenantId = Environment.GetEnvironmentVariable("FASTMCP_SERVER_AUTH_AZUREAD_TENANT_ID");
+    var clientId = Environment.GetEnvironmentVariable("FASTMCP_SERVER_AUTH_AZUREAD_CLIENT_ID");
+    Console.WriteLine($"[DEBUG] TenantID present: {!string.IsNullOrEmpty(tenantId)}");
+    Console.WriteLine($"[DEBUG] ClientID present: {!string.IsNullOrEmpty(clientId)}");
+    
     // Configure Azure AD authentication using token verifier
-    builder.AddAzureAd();
+    builder.AddAzureAdTokenVerifier();
     
     builder.WithComponentsFrom(Assembly.GetExecutingAssembly());
     Console.WriteLine($"[AzureAdOAuthServer] Registered {mcpServer.Tools.Count} tools");

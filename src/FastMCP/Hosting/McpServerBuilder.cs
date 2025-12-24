@@ -35,8 +35,13 @@ public class McpServerBuilder
         // --- Core Authentication and Authorization Setup ---
         _webAppBuilder.Services.AddAuthentication(options =>
         {
-            options.DefaultScheme = McpAuthenticationConstants.ApplicationScheme;
-            options.DefaultChallengeScheme = "Bearer";  // Default to Bearer for APIs
+            // For APIs: Bearer token authentication via JWT Bearer scheme
+            // For web: Fall back to cookie authentication for sign-in/sign-out
+            // DefaultAuthenticateScheme determines which scheme is used to populate context.User
+            // Since we're building an API (MCP), default to Bearer for token extraction
+            options.DefaultAuthenticateScheme = "Bearer";  // Extract Bearer tokens first
+            options.DefaultSignInScheme = McpAuthenticationConstants.ApplicationScheme;  // Use cookie for sign-in
+            options.DefaultChallengeScheme = "Bearer";  // Default challenge to Bearer (401 responses)
         })
         .AddCookie(McpAuthenticationConstants.ApplicationScheme);
 
@@ -96,6 +101,7 @@ public class McpServerBuilder
             config.SetMinimumLevel(LogLevel.Information);
             config.AddFilter("FastMCP.Authentication", LogLevel.Debug);
             config.AddFilter("FastMCP.Authentication.Proxy", LogLevel.Debug);
+            config.AddFilter("FastMCP.Hosting", LogLevel.Debug); // Enable debug logs for McpAuthenticationExtensions
         });
         // --- End Logging Setup ---
     }
@@ -218,29 +224,30 @@ public class McpServerBuilder
         // Register OAuthProxyOptions
         _webAppBuilder.Services.AddSingleton(options);
 
-        // Register ITokenVerifier (if not already registered)
-        if (!_webAppBuilder.Services.Any(x => x.ServiceType == typeof(ITokenVerifier)))
+        if (clientStore != null)
         {
-            _webAppBuilder.Services.AddSingleton(tokenVerifier);
-        }
-
-        // Register IClientStore (ensure it's available)
-        if (!_webAppBuilder.Services.Any(x => x.ServiceType == typeof(IClientStore)))
-        {
-            clientStore ??= new InMemoryClientStore();
+            // If a clientStore is provided, register it.
+            // This allows specific OAuth proxies to use their own client stores if needed.
+            // If there's already an IClientStore registered, this will add another one,
+            // which GetServices<IClientStore>() would correctly handle if multiple are needed.
             _webAppBuilder.Services.AddSingleton<IClientStore>(clientStore);
         }
-
-        // Register the OAuthProxy service
-        var proxy = new OAuthProxy(
-            options,
-            tokenVerifier,
-            clientStore ?? new InMemoryClientStore());
-
-        _webAppBuilder.Services.AddSingleton(proxy);
+        else if (!_webAppBuilder.Services.Any(x => x.ServiceType == typeof(IClientStore)))
+        {
+            // If no clientStore is provided and no IClientStore is already registered, add a default.
+            _webAppBuilder.Services.AddSingleton<IClientStore>(new InMemoryClientStore());
+        }
 
         // Set default challenge scheme to Bearer for OAuth
         WithDefaultChallengeScheme("Bearer");
+
+        // Register the OAuthProxy service (it uses the provided tokenVerifier)
+        // We will resolve IClientStore from the service provider when constructing OAuthProxy
+        _webAppBuilder.Services.AddSingleton(provider => new OAuthProxy(
+            options,
+            tokenVerifier,
+            provider.GetService<IClientStore>() ?? new InMemoryClientStore() // Resolve IClientStore from the provider
+        ));
 
         return this;
     }
@@ -260,6 +267,11 @@ public class McpServerBuilder
 
         // CRITICAL: Authentication must run before authorization
         app.UseAuthentication();
+        
+        // Custom middleware to explicitly extract and validate Bearer tokens
+        // This ensures Bearer tokens are properly authenticated even without a DefaultScheme
+        app.UseMiddleware<BearerAuthenticationMiddleware>();
+        
         app.UseAuthorization();
 
         // Register OAuth Proxy endpoints if configured
