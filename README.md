@@ -1,114 +1,295 @@
-# DotnetFastMCP - Model Context Protocol (MCP) Server Framework
+# DotnetFastMCP - Enterprise-Grade Model Context Protocol Server Framework
 
 [![.NET 8.0](https://img.shields.io/badge/.NET-8.0-blue)](https://dotnet.microsoft.com)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![GitHub](https://img.shields.io/badge/GitHub-tekspry-black)](https://github.com/tekspry/.NetFastMCP)
 
-A modern, production-ready C#/.NET framework for building Model Context Protocol (MCP) servers with minimal boilerplate and maximum flexibility.
+**A modern, production-ready C#/.NET framework for building secure, scalable Model Context Protocol (MCP) servers with enterprise-grade authentication.**
 
 ## 🎯 Overview
 
-DotnetFastMCP provides a clean, attribute-based approach to building MCP servers that implement the JSON-RPC 2.0 protocol. Built on ASP.NET Core, it leverages modern .NET features for high performance and reliability.
+DotnetFastMCP provides a clean, attribute-based approach to building MCP servers that implement the JSON-RPC 2.0 protocol. Built on ASP.NET Core, it leverages modern .NET features for high performance, reliability, and **comprehensive OAuth 2.0 / OpenID Connect authentication** out of the box.
 
-### Key Features
+### ⭐ Key Features
 
+#### Core Framework
 - ✅ **Simple Attribute-Based API** - Declare tools and resources with `[McpTool]` and `[McpResource]` attributes
-- ✅ **Automatic Component Discovery** - Reflection-based scanning of assemblies for components
+- ✅ **Automatic Component Discovery** - Reflection-based scanning of assemblies
 - ✅ **JSON-RPC 2.0 Compliant** - Full protocol compliance with proper error handling
 - ✅ **Flexible Parameter Binding** - Supports both array and named parameters
 - ✅ **Built on ASP.NET Core** - Leverage the powerful ASP.NET Core hosting model
 - ✅ **Production Ready** - Comprehensive error handling and logging
 - ✅ **Type-Safe** - Full C# type system integration
 
+#### 🔐 Enterprise Authentication (NEW!)
+- ✅ **6 OAuth Providers Supported** - Azure AD, Google, GitHub, Auth0, Okta, AWS Cognito
+- ✅ **OAuth Proxy Built-In** - Automatic Dynamic Client Registration (DCR) for non-DCR providers
+- ✅ **JWT Token Verification** - Automatic token validation with JWKS caching
+- ✅ **Zero Configuration** - Set environment variables and go
+- ✅ **Sensible Defaults** - Pre-configured scopes for common use cases
+- ✅ **Fine-Grained Authorization** - Protect tools with `[Authorize]` attribute
+- ✅ **Claims-Based Access** - Access user information from authenticated requests
+
 ## 🚀 Quick Start
 
 ### Installation
 
-Clone the repository:
 ```bash
 git clone https://github.com/tekspry/.NetFastMCP.git
 cd DotnetFastMCP
-```
-
-### Building
-
-```bash
 dotnet build -c Release
 ```
 
-### Running the Example Server
+### Create Your First MCP Server
+
+#### 1. Define Your Tools
+
+```csharp
+using FastMCP.Attributes;
+using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
+
+public static class MyTools
+{
+    /// <summary>
+    /// Public tool - no authentication required
+    /// </summary>
+    [McpTool]
+    public static int Add(int a, int b) => a + b;
+
+    /// <summary>
+    /// Protected tool - requires authentication
+    /// </summary>
+    [McpTool]
+    [Authorize]
+    public static object GetUserProfile(ClaimsPrincipal user)
+    {
+        return new
+        {
+            Name = user.Identity?.Name,
+            Email = user.FindFirst("email")?.Value,
+            IsAuthenticated = user.Identity?.IsAuthenticated
+        };
+    }
+}
+```
+
+#### 2. Configure Server with Authentication
+
+```csharp
+using FastMCP.Hosting;
+using FastMCP.Server;
+using System.Reflection;
+
+var mcpServer = new FastMCPServer(name: "My Secure MCP Server");
+var builder = McpServerBuilder.Create(mcpServer, args);
+
+// Add authentication (choose your provider)
+builder.AddAzureAdTokenVerifier();  // or AddGoogleTokenVerifier(), AddGitHubTokenVerifier(), etc.
+
+// Register tools
+builder.WithComponentsFrom(Assembly.GetExecutingAssembly());
+
+var app = builder.Build();
+app.Urls.Add("http://localhost:5002");
+await app.RunAsync();
+```
+
+#### 3. Set Environment Variables
+
+```powershell
+# Windows PowerShell
+$env:FASTMCP_SERVER_AUTH_AZUREAD_TENANT_ID="your-tenant-id"
+$env:FASTMCP_SERVER_AUTH_AZUREAD_CLIENT_ID="your-client-id"
+$env:FASTMCP_SERVER_AUTH_AZUREAD_CLIENT_SECRET="your-client-secret"
+```
 
 ```bash
-cd examples/BasicServer
+# Linux/Mac
+export FASTMCP_SERVER_AUTH_AZUREAD_TENANT_ID="your-tenant-id"
+export FASTMCP_SERVER_AUTH_AZUREAD_CLIENT_ID="your-client-id"
+export FASTMCP_SERVER_AUTH_AZUREAD_CLIENT_SECRET="your-client-secret"
+```
+
+#### 4. Run and Test
+
+```bash
 dotnet run
 ```
 
-The server will start on `http://localhost:5000`.
+Your server is now running with **OAuth Proxy** endpoints:
+- MCP endpoint: `http://localhost:5002/mcp`
+- OAuth authorization: `http://localhost:5002/oauth/authorize`
+- OAuth token: `http://localhost:5002/oauth/token`
+- Discovery: `http://localhost:5002/.well-known/oauth-authorization-server`
+
+## 🔐 Authentication Providers
+
+DotnetFastMCP supports **6 enterprise-grade OAuth providers** out of the box:
+
+| Provider | Method | Use Case | Default Scopes |
+|----------|--------|----------|----------------|
+| **Azure AD** | `AddAzureAdTokenVerifier()` | Enterprise apps, Microsoft 365 | `openid`, `profile`, `email`, `offline_access` |
+| **Google** | `AddGoogleTokenVerifier()` | Consumer apps, Google Workspace | `openid`, `profile`, `email`, `userinfo.profile` |
+| **GitHub** | `AddGitHubTokenVerifier()` | Developer tools, repositories | `read:user`, `user:email` |
+| **Auth0** | `AddAuth0TokenVerifier()` | Multi-tenant SaaS, custom identity | `openid`, `profile`, `email`, `offline_access` |
+| **Okta** | `AddOktaTokenVerifier()` | Enterprise SSO, workforce identity | `openid`, `profile`, `email`, `offline_access` |
+| **AWS Cognito** | `AddAwsCognitoTokenVerifier()` | AWS-native apps, user pools | `openid`, `profile`, `email` |
+
+### Quick Setup Examples
+
+<details>
+<summary><b>Azure AD</b></summary>
+
+```csharp
+builder.AddAzureAdTokenVerifier();
+```
+
+**Environment Variables:**
+```bash
+FASTMCP_SERVER_AUTH_AZUREAD_TENANT_ID=your-tenant-id
+FASTMCP_SERVER_AUTH_AZUREAD_CLIENT_ID=your-client-id
+FASTMCP_SERVER_AUTH_AZUREAD_CLIENT_SECRET=your-client-secret
+```
+
+**Example:** [`examples/Auth/AzureAdOAuth`](examples/Auth/AzureAdOAuth)
+</details>
+
+<details>
+<summary><b>Google</b></summary>
+
+```csharp
+builder.AddGoogleTokenVerifier();
+```
+
+**Environment Variables:**
+```bash
+FASTMCP_SERVER_AUTH_GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com
+FASTMCP_SERVER_AUTH_GOOGLE_CLIENT_SECRET=your-client-secret
+```
+
+**Example:** [`examples/Auth/GoogleOAuth`](examples/Auth/GoogleOAuth)
+</details>
+
+<details>
+<summary><b>GitHub</b></summary>
+
+```csharp
+builder.AddGitHubTokenVerifier();
+```
+
+**Environment Variables:**
+```bash
+FASTMCP_SERVER_AUTH_GITHUB_CLIENT_ID=your-github-client-id
+FASTMCP_SERVER_AUTH_GITHUB_CLIENT_SECRET=your-github-client-secret
+```
+
+**Example:** [`examples/Auth/GitHubOAuth`](examples/Auth/GitHubOAuth)
+</details>
+
+<details>
+<summary><b>Auth0</b></summary>
+
+```csharp
+builder.AddAuth0TokenVerifier();
+```
+
+**Environment Variables:**
+```bash
+FASTMCP_SERVER_AUTH_AUTH0_DOMAIN=your-tenant.auth0.com
+FASTMCP_SERVER_AUTH_AUTH0_AUDIENCE=https://your-api-identifier
+FASTMCP_SERVER_AUTH_AUTH0_CLIENT_ID=your-client-id
+FASTMCP_SERVER_AUTH_AUTH0_CLIENT_SECRET=your-client-secret
+```
+
+**Example:** [`examples/Auth/Auth0OAuth`](examples/Auth/Auth0OAuth)
+</details>
+
+<details>
+<summary><b>Okta</b></summary>
+
+```csharp
+builder.AddOktaTokenVerifier();
+```
+
+**Environment Variables:**
+```bash
+FASTMCP_SERVER_AUTH_OKTA_DOMAIN=dev-123456.okta.com
+FASTMCP_SERVER_AUTH_OKTA_AUDIENCE=api://default
+FASTMCP_SERVER_AUTH_OKTA_CLIENT_ID=your-client-id
+FASTMCP_SERVER_AUTH_OKTA_CLIENT_SECRET=your-client-secret
+```
+
+**Example:** [`examples/Auth/OktaOAuth`](examples/Auth/OktaOAuth)
+</details>
+
+<details>
+<summary><b>AWS Cognito</b></summary>
+
+```csharp
+builder.AddAwsCognitoTokenVerifier();
+```
+
+**Environment Variables:**
+```bash
+FASTMCP_SERVER_AUTH_AWSCOGNITO_USER_POOL_ID=us-east-1_XXXXXXXXX
+FASTMCP_SERVER_AUTH_AWSCOGNITO_REGION=us-east-1
+FASTMCP_SERVER_AUTH_AWSCOGNITO_CLIENT_ID=your-app-client-id
+FASTMCP_SERVER_AUTH_AWSCOGNITO_CLIENT_SECRET=your-app-client-secret
+FASTMCP_SERVER_AUTH_AWSCOGNITO_DOMAIN=myapp.auth.us-east-1.amazoncognito.com
+```
+
+**Example:** [`examples/Auth/AwsCognitoOAuth`](examples/Auth/AwsCognitoOAuth)
+</details>
 
 ## 📚 Architecture
 
-### Core Components
+### Project Structure
 
 ```
 DotnetFastMCP/
 ├── src/
 │   └── FastMCP/
-│       ├── Attributes/          # Component declaration attributes
-│       ├── Hosting/             # Server hosting and middleware
-│       ├── Protocol/            # JSON-RPC protocol implementation
-│       ├── Server/              # FastMCPServer core class
-│       └── FastMCP.csproj
+│       ├── Attributes/              # Component declaration attributes
+│       ├── Authentication/          # 🔐 OAuth providers & token verification
+│       │   ├── Providers/          # Azure AD, Google, GitHub, Auth0, Okta, AWS
+│       │   ├── Proxy/              # OAuth Proxy for DCR
+│       │   └── Verification/       # JWT token validation
+│       ├── Hosting/                 # Server hosting and middleware
+│       ├── Protocol/                # JSON-RPC protocol implementation
+│       └── Server/                  # FastMCPServer core class
 ├── examples/
-│   └── BasicServer/             # Example MCP server implementation
-├── tests/
-│   └── McpIntegrationTest/      # Integration tests
-└── src/
-    └── FastMCP.CLI/             # Command-line utilities
+│   ├── BasicServer/                 # Simple MCP server
+│   └── Auth/                        # 🔐 Authentication examples
+│       ├── AzureAdOAuth/           # Azure AD example
+│       ├── GoogleOAuth/            # Google OAuth example
+│       ├── GitHubOAuth/            # GitHub OAuth example
+│       ├── Auth0OAuth/             # Auth0 example
+│       ├── OktaOAuth/              # Okta example
+│       └── AwsCognitoOAuth/        # AWS Cognito example
+└── tests/
+    └── McpIntegrationTest/          # Integration tests
 ```
 
-### Project Structure
+### Authentication Flow
 
-| Project | Purpose |
-|---------|---------|
-| `FastMCP` | Core framework library |
-| `FastMCP.CLI` | Command-line interface tools |
-| `BasicServer` | Example MCP server implementation |
-| `McpIntegrationTest` | Integration tests |
+```mermaid
+sequenceDiagram
+    participant Client
+    participant MCP Server
+    participant OAuth Provider
+    
+    Client->>MCP Server: Request with Bearer Token
+    MCP Server->>Token Verifier: Validate Token
+    Token Verifier->>OAuth Provider: Fetch JWKS (if needed)
+    OAuth Provider-->>Token Verifier: Public Keys
+    Token Verifier-->>MCP Server: Validated Claims
+    MCP Server-->>Client: Protected Resource
+```
 
 ## 🔧 Creating an MCP Server
 
-### 1. Define Components
-
-Create a class with tool and resource methods:
-
-```csharp
-using FastMCP.Attributes;
-
-public static class ServerComponents
-{
-    /// <summary>
-    /// Adds two integers together.
-    /// </summary>
-    [McpTool]
-    public static int Add(int a, int b)
-    {
-        return a + b;
-    }
-
-    /// <summary>
-    /// Returns server configuration.
-    /// </summary>
-    [McpResource("resource://config")]
-    public static object GetConfig()
-    {
-        return new { Version = "1.0.0", Author = "Your Team" };
-    }
-}
-```
-
-### 2. Create Server
-
-Initialize the MCP server in `Program.cs`:
+### Basic Server (No Authentication)
 
 ```csharp
 using FastMCP.Hosting;
@@ -118,238 +299,202 @@ using System.Reflection;
 var mcpServer = new FastMCPServer(name: "My MCP Server");
 var builder = McpServerBuilder.Create(mcpServer, args);
 
-// Register components from assembly
 builder.WithComponentsFrom(Assembly.GetExecutingAssembly());
 
 var app = builder.Build();
 await app.RunAsync();
 ```
 
-### 3. Deploy
+### Secure Server (With Authentication)
 
-Build and publish:
+```csharp
+using FastMCP.Hosting;
+using FastMCP.Server;
+using System.Reflection;
 
-```bash
-dotnet publish -c Release
+var mcpServer = new FastMCPServer(name: "My Secure MCP Server");
+var builder = McpServerBuilder.Create(mcpServer, args);
+
+// Add authentication - automatically configures OAuth Proxy
+builder.AddAzureAdTokenVerifier();  // or any other provider
+
+builder.WithComponentsFrom(Assembly.GetExecutingAssembly());
+
+var app = builder.Build();
+app.Urls.Add("http://localhost:5002");
+await app.RunAsync();
+```
+
+### Protected Tools
+
+```csharp
+using FastMCP.Attributes;
+using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
+
+public static class SecureTools
+{
+    /// <summary>
+    /// Public tool - anyone can call
+    /// </summary>
+    [McpTool]
+    public static string Echo(string message) => message;
+
+    /// <summary>
+    /// Protected tool - requires valid OAuth token
+    /// </summary>
+    [McpTool]
+    [Authorize]
+    public static object GetUserInfo(ClaimsPrincipal user)
+    {
+        return new
+        {
+            Name = user.Identity?.Name ?? "Unknown",
+            Email = user.FindFirst("email")?.Value ?? "Not available",
+            IsAuthenticated = user.Identity?.IsAuthenticated ?? false,
+            Claims = user.Claims.Select(c => new { c.Type, c.Value }).ToList()
+        };
+    }
+
+    /// <summary>
+    /// Role-based authorization
+    /// </summary>
+    [McpTool]
+    [Authorize(Roles = "Admin")]
+    public static string AdminOnly() => "Admin access granted";
+}
 ```
 
 ## 📡 JSON-RPC Protocol
 
 ### Calling Tools
 
-**Request:**
+**Public Tool (No Auth):**
 ```json
+POST /mcp
 {
   "jsonrpc": "2.0",
-  "method": "Add",
-  "params": [5, 3],
+  "method": "Echo",
+  "params": ["Hello World"],
   "id": 1
 }
 ```
 
-**Response:**
+**Protected Tool (With Auth):**
 ```json
-{
-  "result": 8,
-  "jsonrpc": "2.0",
-  "id": 1
-}
-```
+POST /mcp
+Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGc...
 
-### Named Parameters
-
-**Request:**
-```json
 {
   "jsonrpc": "2.0",
-  "method": "Add",
-  "params": {"a": 10, "b": 20},
-  "id": 2
-}
-```
-
-**Response:**
-```json
-{
-  "result": 30,
-  "jsonrpc": "2.0",
-  "id": 2
-}
-```
-
-### Error Handling
-
-**Request (Invalid):**
-```json
-{
-  "jsonrpc": "2.0",
-  "method": "NonExistent",
+  "method": "GetUserInfo",
   "params": [],
-  "id": 3
-}
-```
-
-**Response (Error):**
-```json
-{
-  "error": {
-    "code": -32601,
-    "message": "Method 'NonExistent' not found."
-  },
-  "jsonrpc": "2.0",
-  "id": 3
+  "id": 2
 }
 ```
 
 ## 🧪 Testing
 
-### Run Tests
+### Run All Tests
 
 ```bash
 dotnet test
 ```
 
-### Example Test
+### Test Authentication Flow
 
-```powershell
-# Test Add tool with array parameters
-$body = @{jsonrpc="2.0";method="Add";params=@(5,3);id=1} | ConvertTo-Json
-Invoke-RestMethod -Uri "http://localhost:5000/mcp" -Method Post `
-  -Body $body -ContentType "application/json"
+Each authentication example includes a comprehensive `.rest` file for testing:
 
-# Expected response: {"result": 8, "jsonrpc": "2.0", "id": 1}
+```bash
+# Open in VS Code with REST Client extension
+code examples/Auth/AzureAdOAuth/azure-ad-auth-tests.rest
 ```
 
-## 📖 Attributes
+Test files include:
+- ✅ Discovery endpoints
+- ✅ Public tool tests
+- ✅ Protected tool tests (should fail without auth)
+- ✅ OAuth authorization flow
+- ✅ Token exchange
+- ✅ Provider-specific API calls
 
-### [McpTool]
+## 📖 Documentation
 
-Declares a method as an MCP tool:
+### Complete Authentication Guide
+
+See [`mcp-authentication-guide.md`](mcp-authentication-guide.md) for:
+- Detailed provider setup instructions
+- OAuth flow walkthrough
+- Troubleshooting guide
+- Best practices
+- Production deployment checklist
+
+### Example Projects
+
+| Example | Description | Port |
+|---------|-------------|------|
+| [BasicServer](examples/BasicServer) | Simple MCP server without authentication | 5000 |
+| [AzureAdOAuth](examples/Auth/AzureAdOAuth) | Azure AD authentication example | 5002 |
+| [GoogleOAuth](examples/Auth/GoogleOAuth) | Google OAuth example | 5000 |
+| [GitHubOAuth](examples/Auth/GitHubOAuth) | GitHub OAuth example | 5001 |
+| [Auth0OAuth](examples/Auth/Auth0OAuth) | Auth0 authentication example | 5005 |
+| [OktaOAuth](examples/Auth/OktaOAuth) | Okta authentication example | 5007 |
+| [AwsCognitoOAuth](examples/Auth/AwsCognitoOAuth) | AWS Cognito example | 5006 |
+
+## 🏗️ Advanced Features
+
+### OAuth Proxy
+
+DotnetFastMCP includes a built-in **OAuth Proxy** that provides:
+
+- ✅ **Dynamic Client Registration (DCR)** - Automatic client registration for MCP clients
+- ✅ **Authorization Code Flow** - Full OAuth 2.0 authorization code flow with PKCE
+- ✅ **Token Management** - Automatic token exchange, refresh, and revocation
+- ✅ **Discovery Endpoints** - RFC 8414 compliant OAuth discovery
+
+**Automatically Available Endpoints:**
+- `/.well-known/oauth-authorization-server` - OAuth server metadata
+- `/oauth/authorize` - Authorization endpoint
+- `/oauth/token` - Token endpoint
+- `/oauth/register` - Dynamic client registration
+- `/oauth/userinfo` - User information endpoint
+
+### Custom Scopes
+
+Override default scopes for any provider:
 
 ```csharp
-[McpTool]
-public static int Add(int a, int b) => a + b;
-
-[McpTool("CustomName")]  // Optional: specify custom name
-public static string Process(string data) => data.ToUpper();
-```
-
-**Parameters:**
-- `Name` (optional) - Custom method name. Defaults to method name.
-
-### [McpResource]
-
-Declares a method as an MCP resource:
-
-```csharp
-[McpResource("resource://config")]
-public static object GetConfig() => new { Version = "1.0.0" };
-```
-
-**Parameters:**
-- `Uri` (required) - Resource URI in format `resource://name`
-
-## 🔐 Security
-
-The framework includes:
-
-- ✅ **Input Validation** - Parameter type checking and conversion
-- ✅ **Error Handling** - Comprehensive exception handling with proper error codes
-- ✅ **JSON-RPC Compliance** - Specification-compliant error responses
-- ✅ **Type Safety** - C# type system prevents many common errors
-
-For production deployments:
-- Use HTTPS for communication
-- Implement authentication as needed
-- Validate all input parameters
-- Monitor error logs
-
-## 🏗️ Advanced Usage
-
-### Custom Hosting Configuration
-
-```csharp
-var builder = McpServerBuilder.Create(mcpServer, args);
-
-// Configure via WebApplicationBuilder if needed
-// builder._webAppBuilder.Services.AddMyService();
-
-builder.WithComponentsFrom(Assembly.GetExecutingAssembly());
-var app = builder.Build();
-```
-
-### Middleware Integration
-
-The framework automatically registers the MCP protocol middleware:
-- Handles `/mcp` POST endpoints
-- Routes requests to registered tools/resources
-- Validates JSON-RPC format
-- Returns proper error responses
-
-## 📝 API Endpoints
-
-### GET `/`
-
-Returns server metadata:
-
-```
-GET http://localhost:5000/
-HTTP/1.1 200 OK
-
-MCP Server 'Server Name' is running.
-Registered Tools: 2
-Registered Resources: 1
-```
-
-### POST `/mcp`
-
-Processes JSON-RPC requests:
-
-```
-POST http://localhost:5000/mcp
-Content-Type: application/json
-
+builder.AddAzureAdTokenVerifier(new AzureAdAuthOptions
 {
-  "jsonrpc": "2.0",
-  "method": "MethodName",
-  "params": [...],
-  "id": 1
-}
+    RequiredScopes = new[] { "openid", "profile", "email", "User.Read", "Calendars.Read" }
+});
 ```
 
-## 🛠️ Development
+### Multiple Authentication Schemes
 
-### Prerequisites
-
-- .NET 8.0 SDK or later
-- Visual Studio 2022 / VS Code / Rider (recommended)
-- Git
-
-### Project Setup
-
-```bash
-# Clone repository
-git clone https://github.com/tekspry/.NetFastMCP.git
-cd DotnetFastMCP
-
-# Restore dependencies
-dotnet restore
-
-# Build
-dotnet build -c Debug
-
-# Run example server
-cd examples/BasicServer
-dotnet run
+```csharp
+// Support multiple providers simultaneously
+builder.AddAzureAdTokenVerifier();
+builder.AddGoogleTokenVerifier();
+builder.AddGitHubTokenVerifier();
 ```
 
-### Building Documentation
+## 🔐 Security Best Practices
 
-```bash
-# Build example
-cd examples/BasicServer
-dotnet build
-```
+### Development
+- ✅ Use environment variables for secrets
+- ✅ Never commit credentials to source control
+- ✅ Use `.env` files for local development
+- ✅ Test with short-lived tokens
+
+### Production
+- ✅ Use HTTPS for all communication
+- ✅ Store secrets in Azure Key Vault / AWS Secrets Manager
+- ✅ Enable MFA for OAuth providers
+- ✅ Implement rate limiting
+- ✅ Monitor authentication logs
+- ✅ Use separate app registrations per environment
+- ✅ Validate token scopes match required permissions
 
 ## 📦 NuGet Package
 
@@ -375,19 +520,55 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🔗 Resources
 
+### Official Documentation
 - [Model Context Protocol Specification](https://modelcontextprotocol.io)
 - [JSON-RPC 2.0 Specification](https://www.jsonrpc.org/specification)
+- [OAuth 2.0 RFC 6749](https://datatracker.ietf.org/doc/html/rfc6749)
+- [OpenID Connect Core 1.0](https://openid.net/specs/openid-connect-core-1_0.html)
+
+### Framework Documentation
 - [ASP.NET Core Documentation](https://docs.microsoft.com/en-us/aspnet/core/)
 - [.NET 8.0 Documentation](https://docs.microsoft.com/en-us/dotnet/)
+
+### Provider Documentation
+- [Azure AD OAuth 2.0](https://learn.microsoft.com/en-us/azure/active-directory/develop/v2-oauth2-auth-code-flow)
+- [Google OAuth 2.0](https://developers.google.com/identity/protocols/oauth2)
+- [GitHub OAuth](https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/authorizing-oauth-apps)
+- [Auth0 Documentation](https://auth0.com/docs)
+- [Okta Developer](https://developer.okta.com/docs/)
+- [AWS Cognito](https://docs.aws.amazon.com/cognito/)
 
 ## 🐛 Issues & Support
 
 For bug reports and feature requests, please use [GitHub Issues](https://github.com/tekspry/.NetFastMCP/issues).
 
-## ✨ Acknowledgments
+## ✨ What's New
 
-Built as a .NET implementation of the Model Context Protocol, enabling seamless integration with AI models and context-aware applications.
+### v2.0 - Enterprise Authentication (Latest)
+- 🔐 **6 OAuth Providers** - Azure AD, Google, GitHub, Auth0, Okta, AWS Cognito
+- 🔐 **OAuth Proxy** - Built-in DCR support for all providers
+- 🔐 **JWT Token Verification** - Automatic token validation
+- 🔐 **Zero Configuration** - Sensible defaults for all providers
+- 🔐 **Comprehensive Examples** - Complete authentication examples with REST tests
+
+### v1.0 - Core Framework
+- ✅ Attribute-based API
+- ✅ JSON-RPC 2.0 compliance
+- ✅ ASP.NET Core integration
+- ✅ Automatic component discovery
+
+## 🎯 Roadmap
+
+- [ ] Rate limiting per user/client
+- [ ] Metrics and monitoring integration
+- [ ] GraphQL support
+- [ ] WebSocket transport
+- [ ] Additional OAuth providers (LinkedIn, Twitter, etc.)
+- [ ] SAML 2.0 support
+- [ ] Multi-factor authentication (MFA)
 
 ---
 
 **Made with ❤️ by the DotnetFastMCP team**
+
+**⭐ Star this repo if you find it useful!**
