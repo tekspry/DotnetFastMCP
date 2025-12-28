@@ -43,7 +43,53 @@ dotnet build -c Release
 ### Create Your First MCP Server
 
 #### 1. Define Your Tools
+### Running the Example Server
 
+```bash
+cd examples/BasicServer
+dotnet run
+```
+
+The server will start on `http://localhost:5000`.
+
+## 📚 Architecture
+
+### Core Components
+
+```
+DotnetFastMCP/
+├── src/
+│   ├── FastMCP/
+│   │   ├── Attributes/          # Component declaration attributes
+│   │   ├── Hosting/             # Server hosting and middleware
+│   │   ├── Protocol/            # JSON-RPC protocol implementation
+│   │   ├── Server/              # FastMCPServer core class
+│   │   └── FastMCP.csproj
+│   └── FastMCP.CLI/             # Command-line utilities
+├── examples/
+│   └── BasicServer/             # Example MCP server implementation
+├── tests/
+│   └── McpIntegrationTest/      # Integration tests
+├── LAUNCH_TESTS.ps1             # PowerShell test suite launcher
+└── RUN_AND_TEST.ps1             # PowerShell integration test script
+```
+
+### Project Structure
+
+| Project | Purpose |
+|---------|---------|
+| `FastMCP` | Core framework library |
+| `FastMCP.CLI` | Command-line interface tools |
+| `BasicServer` | Example MCP server implementation |
+| `McpIntegrationTest` | Integration tests |
+
+## 🔧 Creating an MCP Server
+
+### 1. Define Components
+
+For better organization, split your components into multiple files (e.g., `Tools.cs`, `Resources.cs`). The framework will discover them automatically.
+
+**File: `Tools.cs`**
 ```csharp
 using FastMCP.Attributes;
 using Microsoft.AspNetCore.Authorization;
@@ -57,6 +103,12 @@ public static class MyTools
     [McpTool]
     public static int Add(int a, int b) => a + b;
 
+**File: `Resources.cs`**
+```csharp
+using FastMCP.Attributes;
+
+public static class Resources
+{
     /// <summary>
     /// Protected tool - requires authentication
     /// </summary>
@@ -173,6 +225,7 @@ FASTMCP_SERVER_AUTH_GOOGLE_CLIENT_SECRET=your-client-secret
 
 <details>
 <summary><b>GitHub</b></summary>
+### Run Unit & Integration Tests
 
 ```csharp
 builder.AddGitHubTokenVerifier();
@@ -186,6 +239,23 @@ FASTMCP_SERVER_AUTH_GITHUB_CLIENT_SECRET=your-github-client-secret
 
 **Example:** [`examples/Auth/GitHubOAuth`](examples/Auth/GitHubOAuth)
 </details>
+### PowerShell Integration Test Suite
+
+The project includes a comprehensive PowerShell-based integration test suite that validates a running server end-to-end.
+
+1.  **Publish the server** (from the root of the `DotnetFastMCP` project):
+    ```sh
+    dotnet publish -c Release -o ..\publish examples\BasicServer
+    ```
+
+2.  **Run the tests**:
+    Open a PowerShell terminal and run the launcher script from the project root:
+    ```powershell
+    .\LAUNCH_TESTS.ps1
+    ```
+This will open a new window, start the `BasicServer`, and run a series of tests covering all tools and resources, including error handling.
+
+### Example Manual Test
 
 <details>
 <summary><b>Auth0</b></summary>
@@ -319,6 +389,7 @@ var builder = McpServerBuilder.Create(mcpServer, args);
 builder.AddAzureAdTokenVerifier();  // or any other provider
 
 builder.WithComponentsFrom(Assembly.GetExecutingAssembly());
+Returns server metadata. The example server returns:
 
 var app = builder.Build();
 app.Urls.Add("http://localhost:5002");
@@ -326,6 +397,10 @@ await app.RunAsync();
 ```
 
 ### Protected Tools
+MCP Server 'My First Dotnet MCP Server' is running.
+Registered Tools: 3
+Registered Resources: 3
+```
 
 ```csharp
 using FastMCP.Attributes;
