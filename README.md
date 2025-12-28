@@ -103,10 +103,6 @@ public static class MyTools
     [McpTool]
     public static int Add(int a, int b) => a + b;
 
-**File: `Resources.cs`**
-```csharp
-using FastMCP.Attributes;
-
 public static class Resources
 {
     /// <summary>
