@@ -393,10 +393,6 @@ await app.RunAsync();
 ```
 
 ### Protected Tools
-MCP Server 'My First Dotnet MCP Server' is running.
-Registered Tools: 3
-Registered Resources: 3
-```
 
 ```csharp
 using FastMCP.Attributes;
