@@ -13,6 +13,7 @@ public class FastMCPServer
     // Collections to store registered components
     public List<MethodInfo> Tools { get; } = new();
     public List<MethodInfo> Resources { get; } = new();
+    public List<MethodInfo> Prompts { get; } = new();
     
     // Dictionary to store OpenAPI tool proxies or other dynamic tools by name.
     // This allows the middleware to look up tool handlers by name.
