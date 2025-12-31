@@ -1,6 +1,5 @@
 using FastMCP.Attributes;
 using FastMCP.Protocol;
-using System.Collections.Generic;
 
 namespace BasicServer.Prompts;
 
