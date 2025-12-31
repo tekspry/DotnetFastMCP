@@ -1,0 +1,63 @@
+### Manual Test Guide for Prompts
+### 1. Run the BasicServer: `dotnet run --project examples/BasicServer`
+### 2. Use this file with the "REST Client" extension in VS Code.
+
+@baseUrl = http://localhost:5000
+
+### 1. List All Prompts
+POST {{baseUrl}}/mcp
+Content-Type: application/json
+
+{
+  "jsonrpc": "2.0",
+  "method": "prompts/list",
+  "params": {},
+  "id": 1
+}
+
+### 2. Get 'analyze_code' Prompt (No arguments - uses defaults)
+POST {{baseUrl}}/mcp
+Content-Type: application/json
+
+{
+  "jsonrpc": "2.0",
+  "method": "prompts/get",
+  "params": {
+    "name": "analyze_code"
+  },
+  "id": 2
+}
+
+### 3. Get 'analyze_code' Prompt (With arguments)
+POST {{baseUrl}}/mcp
+Content-Type: application/json
+
+{
+  "jsonrpc": "2.0",
+  "method": "prompts/get",
+  "params": {
+    "name": "analyze_code",
+    "arguments": {
+      "code": "Console.WriteLine(\"Hello Manual Test\");",
+      "language": "csharp"
+    }
+  },
+  "id": 3
+}
+
+### 4. Get 'generate_test' Prompt
+POST {{baseUrl}}/mcp
+Content-Type: application/json
+
+{
+  "jsonrpc": "2.0",
+  "method": "prompts/get",
+  "params": {
+    "name": "generate_test",
+    "arguments": {
+        "functionName": "CalculateTax",
+        "requirements": "Input: 100, Rate: 0.1 -> Output: 10"
+    }
+  },
+  "id": 4
+}

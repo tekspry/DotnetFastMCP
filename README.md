@@ -14,6 +14,7 @@ DotnetFastMCP provides a clean, attribute-based approach to building MCP servers
 
 #### Core Framework
 - ✅ **Simple Attribute-Based API** - Declare tools and resources with `[McpTool]` and `[McpResource]` attributes
+- ✅ **First-Class Prompts Support** - Define prompts with `[McpPrompt]` for LLM interaction templates
 - ✅ **Automatic Component Discovery** - Reflection-based scanning of assemblies
 - ✅ **JSON-RPC 2.0 Compliant** - Full protocol compliance with proper error handling
 - ✅ **Flexible Parameter Binding** - Supports both array and named parameters
@@ -434,6 +435,35 @@ public static class SecureTools
 
 ## 📡 JSON-RPC Protocol
 
+### Prompts
+
+Prompts allow servers to provide templates that LLMs can use.
+
+```csharp
+using FastMCP.Attributes;
+using FastMCP.Protocol;
+
+public static class MyPrompts
+{
+    [McpPrompt("analyze_code")]
+    public static GetPromptResult Analyze(string code)
+    {
+        return new GetPromptResult
+        {
+            Description = "Analyze the given code",
+            Messages = new List<PromptMessage>
+            {
+                new PromptMessage 
+                { 
+                    Role = "user", 
+                    Content = new { type = "text", text = $"Please analyze this code:\n{code}" } 
+                }
+            }
+        };
+    }
+}
+```
+
 ### Calling Tools
 
 **Public Tool (No Auth):**
@@ -626,13 +656,22 @@ For bug reports and feature requests, please use [GitHub Issues](https://github.
 
 ## 🎯 Roadmap
 
-- [ ] Rate limiting per user/client
-- [ ] Metrics and monitoring integration
-- [ ] GraphQL support
-- [ ] WebSocket transport
-- [ ] Additional OAuth providers (LinkedIn, Twitter, etc.)
-- [ ] SAML 2.0 support
-- [ ] Multi-factor authentication (MFA)
+### Core Functionality
+- [ ] **Context & Interaction** - Access logging, progress reporting, and client sampling via `Context` object
+- [ ] **Stdio Transport** - Support for standard input/output transport (essential for Claude Desktop)
+- [ ] **SSE Transport** - Dedicated Server-Sent Events transport
+- [ ] **Client Library** - Native .NET client SDK for building MCP clients
+
+### Advanced Features
+- [ ] **Middleware Interception** - Hooks for inspecting/modifying JSON-RPC messages
+- [ ] **Server Composition** - Ability to mount or import other MCP servers
+- [ ] **Storage Abstractions** - Interfaces for state persistence
+- [ ] **Background Tasks** - Patterns for long-running operations
+
+### UI & Metadata
+- [ ] **Icons** - Support for tool and server icons
+- [ ] **Binary Content** - Helpers for handling Image and Audio content types
+- [ ] **Multi-factor authentication (MFA)** - For OAuth providers
 
 ---
 

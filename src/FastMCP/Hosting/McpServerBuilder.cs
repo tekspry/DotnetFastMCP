@@ -133,6 +133,11 @@ public class McpServerBuilder
             {
                 _mcpServer.Resources.Add(method);
             }
+
+            if (method.GetCustomAttribute<McpPromptAttribute>() is not null)
+            {
+                _mcpServer.Prompts.Add(method);
+            }
         }
 
         return this;
