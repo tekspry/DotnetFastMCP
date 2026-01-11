@@ -6,7 +6,7 @@ namespace FastMCP.Hosting;
 /// <summary>
 /// Implements the MCP Standard Input/Output (stdio) transport.
 /// </summary>
-public class McpStdioTransport
+public class McpStdioTransport : IMcpSession
 {
     private readonly McpRequestHandler _requestHandler;
     private readonly FastMCPServer _server;
@@ -55,7 +55,7 @@ public class McpStdioTransport
                 if (request != null)
                 {
                     // Handle and Reply
-                    var response = await _requestHandler.HandleRequestAsync(request, _server, null); // User is null for Stdio
+                    var response = await _requestHandler.HandleRequestAsync(request, _server, null, this, cancellationToken); // User is null for Stdio
                     await SendResponseAsync(response);
                 }
             }
@@ -69,6 +69,19 @@ public class McpStdioTransport
             _logger.LogError(ex, "Stdio Transport Fatal Error");
         }
     }
+
+    public async Task SendNotificationAsync(string method, object? parameters, CancellationToken cancellationToken = default)
+    {
+        // Notification is just a Request without an ID
+        var notification = new { jsonrpc = "2.0", method = method, @params = parameters };
+        var json = JsonSerializer.Serialize(notification, _jsonOptions);
+        
+        // Use a lock or semaphore if purely concurrent writing is needed, 
+        // but Console.Out.WriteLineAsync is generally thread-safe enough for this scale.
+        await Console.Out.WriteLineAsync(json.AsMemory(), cancellationToken);
+        await Console.Out.FlushAsync(cancellationToken);
+    }
+    
     private async Task SendResponseAsync(JsonRpcResponse response)
     {
         var json = JsonSerializer.Serialize(response, _jsonOptions);

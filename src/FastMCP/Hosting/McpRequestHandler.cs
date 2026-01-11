@@ -20,7 +20,7 @@ public class McpRequestHandler
     /// <summary>
     /// Handles a single JSON-RPC request and returns the response.
     /// </summary>
-    public async Task<JsonRpcResponse> HandleRequestAsync(JsonRpcRequest request, FastMCPServer server, ClaimsPrincipal? user)
+    public async Task<JsonRpcResponse> HandleRequestAsync(JsonRpcRequest request, FastMCPServer server, ClaimsPrincipal? user, IMcpSession? session = null, CancellationToken cancellationToken = default)
     {
         try
         {
@@ -33,13 +33,13 @@ public class McpRequestHandler
                 case "prompts/list":
                     return await HandlePromptsListAsync(server, request);
                 case "prompts/get":
-                    return await HandlePromptsGetAsync(server, request, user);
+                    return await HandlePromptsGetAsync(server, request, user, session, cancellationToken);
                 case "tools/list":
                     return HandleToolsList(server, request);
                 case "resources/list": 
                     return HandleResourcesList(server, request);
                 default:
-                    return await HandleToolExecutionAsync(server, request, user);
+                    return await HandleToolExecutionAsync(server, request, user, session, cancellationToken);
             }
         }
         catch (Exception ex)
@@ -67,7 +67,8 @@ public class McpRequestHandler
         }).ToList();
         return Task.FromResult(new JsonRpcResponse { Id = request.Id, Result = new { prompts } });
     }
-    private async Task<JsonRpcResponse> HandlePromptsGetAsync(FastMCPServer server, JsonRpcRequest request, ClaimsPrincipal? user)
+    private async Task<JsonRpcResponse> HandlePromptsGetAsync(FastMCPServer server, JsonRpcRequest request, ClaimsPrincipal? user, IMcpSession? session, 
+        CancellationToken cancellationToken)
     {
         try
         {
@@ -91,7 +92,7 @@ public class McpRequestHandler
             }
             JsonElement arguments = root.TryGetProperty("arguments", out var argsProp) ? argsProp : JsonDocument.Parse("{}").RootElement;
             // Reuse binding logic
-            var args = BindParameters(promptMethod, arguments, user);
+            var args = BindParameters(promptMethod, arguments, user, session, request.Id, cancellationToken);
             var result = await InvokeMethodAsync(promptMethod, null, args);
             return new JsonRpcResponse { Id = request.Id, Result = result };
         }
@@ -100,7 +101,7 @@ public class McpRequestHandler
              return JsonRpcResponse.FromError(JsonRpcError.ErrorCodes.InternalError, ex.InnerException?.Message ?? ex.Message, request.Id);
         }
     }
-    private async Task<JsonRpcResponse> HandleToolExecutionAsync(FastMCPServer server, JsonRpcRequest request, ClaimsPrincipal? user)
+    private async Task<JsonRpcResponse> HandleToolExecutionAsync(FastMCPServer server, JsonRpcRequest request, ClaimsPrincipal? user, IMcpSession? session, CancellationToken cancellationToken)
     {
         // 1. Discovery
         MethodInfo? toolMethod = null;
@@ -141,7 +142,7 @@ public class McpRequestHandler
             }
             else
             {
-                args = BindParameters(toolMethod, request.Params, user);
+                args = BindParameters(toolMethod, request.Params, user, session, request.Id, cancellationToken);
             }
         }
         catch (Exception ex)
@@ -210,7 +211,9 @@ public class McpRequestHandler
         }
         return result;
     }
-    private object?[] BindParameters(MethodInfo method, object? rpcParams, ClaimsPrincipal? user)
+    private object?[] BindParameters(MethodInfo method, object? rpcParams, ClaimsPrincipal? user, IMcpSession? session,
+        object? requestId,
+        CancellationToken cancellationToken)
     {
         var methodParams = method.GetParameters();
         if (methodParams.Length == 0) 
@@ -219,9 +222,20 @@ public class McpRequestHandler
         
         for (int i = 0; i < methodParams.Length; i++)
         {
-            if (methodParams[i].ParameterType == typeof(ClaimsPrincipal))
+            var pType = methodParams[i].ParameterType;
+
+            if (pType == typeof(ClaimsPrincipal))
             {
                 args[i] = user;
+            }
+            else if(pType == typeof(McpContext))
+            {
+                var effectiveSession = session ?? new NoOpSession();
+                args[i] = new McpContext(effectiveSession, requestId ?? "unknown", cancellationToken);
+            }
+             else if (pType == typeof(CancellationToken))
+            {
+                args[i] = cancellationToken;
             }
         }
         if (rpcParams is null)
@@ -239,11 +253,7 @@ public class McpRequestHandler
         return BindJsonElement((JsonElement)rpcParams, methodParams, args);
     }
     
-    // ... [BindJsonElement, BindObjectParameters, BindArrayParameters, FillMissingParamsWithDefaults] 
-    // (These helper methods are identical to the Middleware ones and would be copied here)
-    
-    // COPIED HELPERS BELOW (For completeness in preview)
-    
+        
     private object?[] BindJsonElement(JsonElement paramsElement, ParameterInfo[] methodParams, object?[] args)
     {
         if (paramsElement.ValueKind == JsonValueKind.Object)

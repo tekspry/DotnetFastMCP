@@ -631,6 +631,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ### Framework Documentation
 - [Protocol Discovery Guide](Documentation/protocol-discovery-guide.md)
+- [Context & Interaction Guide](Documentation/context-interaction-guide.md)
 - [Stdio Transport Guide](Documentation/stdio-transport-guide.md)
 - [ASP.NET Core Documentation](https://docs.microsoft.com/en-us/aspnet/core/)
 - [.NET 8.0 Documentation](https://docs.microsoft.com/en-us/dotnet/)
@@ -648,6 +649,14 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 For bug reports and feature requests, please use [GitHub Issues](https://github.com/tekspry/.NetFastMCP/issues).
 
 ## ✨ What's New
+
+### v1.2.0 - Protocol Discovery & Context
+- ✅ **Protocol Discovery** - Tools and Resources dynamic discovery
+- ✅ **Context System** - `McpContext` injection for logging and progress
+- ✅ **Stdio Transport** - Full support for local stdio communication
+
+### v1.1.0 - Stdio Support
+- ✅ **Stdio Transport** - Initial support for stdio communication
 
 ### v2.0 - Enterprise Authentication (Latest)
 - 🔐 **6 OAuth Providers** - Azure AD, Google, GitHub, Auth0, Okta, AWS Cognito
