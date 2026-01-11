@@ -172,6 +172,12 @@ Your server is now running with **OAuth Proxy** endpoints:
 - OAuth token: `http://localhost:5002/oauth/token`
 - Discovery: `http://localhost:5002/.well-known/oauth-authorization-server`
 
+#### Stdio Mode
+You can also run the server in Stdio mode (for local LLM clients):
+```bash
+dotnet run -- --stdio
+```
+
 ## 🔐 Authentication Providers
 
 DotnetFastMCP supports **6 enterprise-grade OAuth providers** out of the box:
@@ -624,6 +630,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - [OpenID Connect Core 1.0](https://openid.net/specs/openid-connect-core-1_0.html)
 
 ### Framework Documentation
+- [Protocol Discovery Guide](Documentation/protocol-discovery-guide.md)
+- [Stdio Transport Guide](Documentation/stdio-transport-guide.md)
 - [ASP.NET Core Documentation](https://docs.microsoft.com/en-us/aspnet/core/)
 - [.NET 8.0 Documentation](https://docs.microsoft.com/en-us/dotnet/)
 
@@ -657,8 +665,8 @@ For bug reports and feature requests, please use [GitHub Issues](https://github.
 ## 🎯 Roadmap
 
 ### Core Functionality
-- [ ] **Context & Interaction** - Access logging, progress reporting, and client sampling via `Context` object
-- [ ] **Stdio Transport** - Support for standard input/output transport (essential for Claude Desktop)
+- [x] **Context & Interaction** - Access logging, progress reporting, and client sampling via `Context` object
+- [x] **Stdio Transport** - Support for standard input/output transport (essential for Claude Desktop)
 - [ ] **SSE Transport** - Dedicated Server-Sent Events transport
 - [ ] **Client Library** - Native .NET client SDK for building MCP clients
 
