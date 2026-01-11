@@ -1,17 +1,9 @@
-using FastMCP.Attributes;
 using FastMCP.Protocol;
 using FastMCP.Server;
 using Microsoft.AspNetCore.Http;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
 using System.Text.Json;
 using Microsoft.AspNetCore.Builder;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Authorization; 
-using Microsoft.Extensions.DependencyInjection;
-using System.Security.Claims;
+using Microsoft.Extensions.Logging;
 
 namespace FastMCP.Hosting;
 
@@ -26,7 +18,7 @@ public class McpProtocolMiddleware
         _next = next;
     }
 
-    public async Task InvokeAsync(HttpContext context, FastMCPServer server, McpRequestHandler requestHandler)
+    public async Task InvokeAsync(HttpContext context, FastMCPServer server, McpRequestHandler requestHandler, ILogger<McpProtocolMiddleware> logger)
     {
         try
         {
@@ -42,7 +34,7 @@ public class McpProtocolMiddleware
             if (request == null) return; 
 
             // The Core Transformation: Delegate to the Handler
-            var response = await requestHandler.HandleRequestAsync(request, server, context.User);
+            var response = await requestHandler.HandleRequestAsync(request, server, context.User, new ServerLogSession(logger),context.RequestAborted);
             await JsonSerializer.SerializeAsync(context.Response.Body, response, _jsonOptions);
         }
         catch (Exception ex)

@@ -1,4 +1,6 @@
+using FastMCP;
 using FastMCP.Attributes;
+using System.Threading.Tasks;
 
 namespace BasicServer.Tools;
 
@@ -17,5 +19,15 @@ public static class Tools
     public static int Add(int a, int b)
     {
         return a + b;
+    }
+
+    [McpTool]
+    public static async Task<string> TestContext(string input, McpContext context)
+    {
+        await context.LogInfoAsync($"Received input: {input}");
+        await context.ReportProgressAsync(10, 100);
+        await Task.Delay(100); 
+        await context.ReportProgressAsync(100, 100);
+        return $"Processed: {input}";
     }
 }
