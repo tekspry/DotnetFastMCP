@@ -38,6 +38,8 @@ public class McpRequestHandler
                     return HandleToolsList(server, request);
                 case "resources/list": 
                     return HandleResourcesList(server, request);
+                case "tools/call":
+                    return await HandleToolsCallAsync(server, request, user, session, cancellationToken);
                 default:
                     return await HandleToolExecutionAsync(server, request, user, session, cancellationToken);
             }
@@ -47,6 +49,37 @@ public class McpRequestHandler
             return JsonRpcResponse.FromError(JsonRpcError.ErrorCodes.InternalError, ex.Message, request?.Id);
         }
     }
+
+    private async Task<JsonRpcResponse> HandleToolsCallAsync(FastMCPServer server, JsonRpcRequest request, ClaimsPrincipal? user, IMcpSession? session, CancellationToken cancellationToken)
+    {
+        if (request.Params is not JsonElement root || root.ValueKind != JsonValueKind.Object)
+        {
+             return JsonRpcResponse.FromError(JsonRpcError.ErrorCodes.InvalidParams, "Invalid params for tools/call", request.Id);
+        }
+
+        if (!root.TryGetProperty("name", out var nameProp))
+        {
+             return JsonRpcResponse.FromError(JsonRpcError.ErrorCodes.InvalidParams, "Missing 'name' parameter", request.Id);
+        }
+        string toolName = nameProp.GetString() ?? "";
+
+        object? arguments = null;
+        if (root.TryGetProperty("arguments", out var argsProp))
+        {
+            arguments = argsProp;
+        }
+
+        var proxyRequest = new JsonRpcRequest
+        {
+            JsonRpc = request.JsonRpc,
+            Id = request.Id,
+            Method = toolName,
+            Params = arguments
+        };
+
+        return await HandleToolExecutionAsync(server, proxyRequest, user, session, cancellationToken);
+    }
+
     private Task<JsonRpcResponse> HandlePromptsListAsync(FastMCPServer server, JsonRpcRequest request)
     {
         var prompts = server.Prompts.Select(m => {
