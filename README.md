@@ -8,7 +8,7 @@
 
 ## 🎯 Overview
 
-DotnetFastMCP provides a clean, attribute-based approach to building MCP servers that implement the JSON-RPC 2.0 protocol. Built on ASP.NET Core, it leverages modern .NET features for high performance, reliability, and **comprehensive OAuth 2.0 / OpenID Connect authentication** out of the box.
+DotnetFastMCP provides a clean, attribute-based approach to building MCP servers that implement the JSON-RPC 2.0 protocol. It includes a **native .NET Client Library** client for consuming MCP servers, making it a complete solution for building both sides of the Model Context Protocol. Built on ASP.NET Core, it leverages modern .NET features for high performance, reliability, and **comprehensive OAuth 2.0 / OpenID Connect authentication** out of the box.
 
 ### ⭐ Key Features
 
@@ -22,7 +22,7 @@ DotnetFastMCP provides a clean, attribute-based approach to building MCP servers
 - ✅ **Production Ready** - Comprehensive error handling and logging
 - ✅ **Type-Safe** - Full C# type system integration
 
-#### 🔐 Enterprise Authentication (NEW!)
+#### 🔐 Enterprise Authentication
 - ✅ **6 OAuth Providers Supported** - Azure AD, Google, GitHub, Auth0, Okta, AWS Cognito
 - ✅ **OAuth Proxy Built-In** - Automatic Dynamic Client Registration (DCR) for non-DCR providers
 - ✅ **JWT Token Verification** - Automatic token validation with JWKS caching
@@ -30,6 +30,12 @@ DotnetFastMCP provides a clean, attribute-based approach to building MCP servers
 - ✅ **Sensible Defaults** - Pre-configured scopes for common use cases
 - ✅ **Fine-Grained Authorization** - Protect tools with `[Authorize]` attribute
 - ✅ **Claims-Based Access** - Access user information from authenticated requests
+
+#### 🔌 Native Client Library (NEW!)
+- ✅ **McpClient** - Type-safe .NET client for consuming any MCP server
+- ✅ **Transport Agnostic** - Support for both Stdio and SSE connections
+- ✅ **Notification Handling** - Events for real-time logs and progress
+- ✅ **Tool Invocation** - Clean `CallToolAsync<T>` API
 
 ## 🚀 Quick Start
 
@@ -62,6 +68,7 @@ DotnetFastMCP/
 ├── src/
 │   ├── FastMCP/
 │   │   ├── Attributes/          # Component declaration attributes
+│   │   ├── Client/              # 🔌 Client library implementation
 │   │   ├── Hosting/             # Server hosting and middleware
 │   │   ├── Protocol/            # JSON-RPC protocol implementation
 │   │   ├── Server/              # FastMCPServer core class
@@ -83,6 +90,7 @@ DotnetFastMCP/
 | `FastMCP.CLI` | Command-line interface tools |
 | `BasicServer` | Example MCP server implementation |
 | `McpIntegrationTest` | Integration tests |
+| `ClientDemo` | Example Client consuming BasicServer |
 
 ## 🔧 Creating an MCP Server
 
@@ -176,6 +184,24 @@ Your server is now running with **OAuth Proxy** endpoints:
 You can also run the server in Stdio mode (for local LLM clients):
 ```bash
 dotnet run -- --stdio
+```
+
+### Create an MCP Client
+
+Connect to any MCP server using the C# Client Library:
+
+```csharp
+using FastMCP.Client;
+using FastMCP.Client.Transports;
+
+// 1. Connect (via Stdio or SSE)
+var transport = new StdioClientTransport("dotnet", "run --project examples/BasicServer -- --stdio");
+await using var client = new McpClient(transport);
+await client.ConnectAsync();
+
+// 2. List & Call Tools
+var tools = await client.ListToolsAsync();
+var result = await client.CallToolAsync<int>("add_numbers", new { a = 10, b = 20 });
 ```
 
 ## 🔐 Authentication Providers
@@ -342,6 +368,17 @@ DotnetFastMCP/
 │       └── AwsCognitoOAuth/        # AWS Cognito example
 └── tests/
     └── McpIntegrationTest/          # Integration tests
+```
+
+### Project Structure (Client)
+The `FastMCP` framework now includes a complete client implementation in `src/FastMCP/Client`.
+
+```mermaid
+graph TD
+    App[Your App] -->|Uses| Client[McpClient]
+    Client -->|IClientTransport| Trans[Transport Layer]
+    Trans -->|Stdio| Local[Local Process]
+    Trans -->|SSE/HTTP| Remote[Remote Server]
 ```
 
 ### Authentication Flow
@@ -631,6 +668,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ### Framework Documentation
 - [Protocol Discovery Guide](Documentation/protocol-discovery-guide.md)
+- [Client Library Guide](Documentation/client-library-guide.md)
 - [Context & Interaction Guide](Documentation/context-interaction-guide.md)
 - [SSE Transport Guide](Documentation/sse-transport-guide.md)
 - [Stdio Transport Guide](Documentation/stdio-transport-guide.md)
@@ -651,7 +689,12 @@ For bug reports and feature requests, please use [GitHub Issues](https://github.
 
 ## ✨ What's New
 
-### v1.4.0 - Server-Sent Events (SSE) (Latest)
+### v1.5.0 - Native Client Library (Latest)
+- ✅ **McpClient** - Type-safe .NET client for consuming MCP servers
+- ✅ **Transport Agnostic** - Support for both Stdio and SSE connections
+- ✅ **Notification Handling** - Events for real-time logs and progress
+
+### v1.4.0 - Server-Sent Events (SSE)
 - ✅ **SSE Transport** - Real-time server-to-client streaming transport
 - ✅ **Async Notifications** - Push logs and progress updates to HTTP clients
 
@@ -680,7 +723,7 @@ For bug reports and feature requests, please use [GitHub Issues](https://github.
 - [x] **Context & Interaction** - Access logging, progress reporting, and client sampling via `Context` object
 - [x] **Stdio Transport** - Support for standard input/output transport (essential for Claude Desktop)
 - [x] **SSE Transport** - Dedicated Server-Sent Events transport
-- [ ] **Client Library** - Native .NET client SDK for building MCP clients
+- [x] **Client Library** - Native .NET client SDK for building MCP clients
 
 ### Advanced Features
 - [ ] **Middleware Interception** - Hooks for inspecting/modifying JSON-RPC messages
