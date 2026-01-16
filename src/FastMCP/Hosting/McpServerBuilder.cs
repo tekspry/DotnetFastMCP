@@ -121,6 +121,7 @@ public class McpServerBuilder
         });
         // --- End CORS Setup ---
 
+        _webAppBuilder.Services.AddMcpSse();
 
     }
 
@@ -303,6 +304,9 @@ public class McpServerBuilder
         {
             app.MapOAuthProxyEndpoints(oauthProxy);
         }
+
+        // NEW: Enable SSE Middleware
+        app.UseMcpSse();
 
         // Register the MCP protocol middleware for /mcp endpoints
         app.UseMcpProtocol();
