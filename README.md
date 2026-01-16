@@ -632,6 +632,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ### Framework Documentation
 - [Protocol Discovery Guide](Documentation/protocol-discovery-guide.md)
 - [Context & Interaction Guide](Documentation/context-interaction-guide.md)
+- [SSE Transport Guide](Documentation/sse-transport-guide.md)
 - [Stdio Transport Guide](Documentation/stdio-transport-guide.md)
 - [ASP.NET Core Documentation](https://docs.microsoft.com/en-us/aspnet/core/)
 - [.NET 8.0 Documentation](https://docs.microsoft.com/en-us/dotnet/)
@@ -649,6 +650,10 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 For bug reports and feature requests, please use [GitHub Issues](https://github.com/tekspry/.NetFastMCP/issues).
 
 ## ✨ What's New
+
+### v1.3.0 - Server-Sent Events (SSE) (New)
+- ✅ **SSE Transport** - Real-time server-to-client streaming transport
+- ✅ **Async Notifications** - Push logs and progress updates to HTTP clients
 
 ### v1.2.0 - Protocol Discovery & Context
 - ✅ **Protocol Discovery** - Tools and Resources dynamic discovery
@@ -677,7 +682,7 @@ For bug reports and feature requests, please use [GitHub Issues](https://github.
 - [x] **Protocol Discovery** - Dynamic discovery of Tools, Resources, and Prompts
 - [x] **Context & Interaction** - Access logging, progress reporting, and client sampling via `Context` object
 - [x] **Stdio Transport** - Support for standard input/output transport (essential for Claude Desktop)
-- [ ] **SSE Transport** - Dedicated Server-Sent Events transport
+- [x] **SSE Transport** - Dedicated Server-Sent Events transport
 - [ ] **Client Library** - Native .NET client SDK for building MCP clients
 
 ### Advanced Features
