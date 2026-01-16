@@ -651,30 +651,27 @@ For bug reports and feature requests, please use [GitHub Issues](https://github.
 
 ## ✨ What's New
 
-### v1.3.0 - Server-Sent Events (SSE) (New)
+### v1.4.0 - Server-Sent Events (SSE) (Latest)
 - ✅ **SSE Transport** - Real-time server-to-client streaming transport
 - ✅ **Async Notifications** - Push logs and progress updates to HTTP clients
 
-### v1.2.0 - Protocol Discovery & Context
-- ✅ **Protocol Discovery** - Tools and Resources dynamic discovery
+### v1.3.0 - Context & Interaction
 - ✅ **Context System** - `McpContext` injection for logging and progress
-- ✅ **Stdio Transport** - Full support for local stdio communication
+- ✅ **IMcpSession** - Transport-agnostic interaction abstraction
 
-### v1.1.0 - Stdio Support
+### v1.2.0 - Protocol Discovery
+- ✅ **Dynamic Discovery** - Auto-discovery of Tools, Resources, and Prompts
+- ✅ **Prompts/List** - Full support for prompt templates
+
+### v1.1.0 - Stdio Transport & Authentication
 - ✅ **Stdio Transport** - Initial support for stdio communication
-
-### v2.0 - Enterprise Authentication (Latest)
 - 🔐 **6 OAuth Providers** - Azure AD, Google, GitHub, Auth0, Okta, AWS Cognito
-- 🔐 **OAuth Proxy** - Built-in DCR support for all providers
-- 🔐 **JWT Token Verification** - Automatic token validation
-- 🔐 **Zero Configuration** - Sensible defaults for all providers
-- 🔐 **Comprehensive Examples** - Complete authentication examples with REST tests
+- 🔐 **OAuth Proxy** - Built-in DCR support
 
-### v1.0 - Core Framework
+### v1.0.0 - Core Framework
 - ✅ Attribute-based API
 - ✅ JSON-RPC 2.0 compliance
 - ✅ ASP.NET Core integration
-- ✅ Automatic component discovery
 
 ## 🎯 Roadmap
 
