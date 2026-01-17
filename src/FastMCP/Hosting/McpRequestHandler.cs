@@ -72,6 +72,8 @@ public class McpRequestHandler
                     return HandleResourcesList(server, request);
                 case "tools/call":
                     return await HandleToolsCallAsync(server, request, user, session, cancellationToken);
+                case "resources/read":
+                    return await HandleResourcesReadAsync(server, request, user, session, cancellationToken);
                 default:
                     return await HandleToolExecutionAsync(server, request, user, session, cancellationToken);
             }
@@ -114,7 +116,7 @@ public class McpRequestHandler
 
     private Task<JsonRpcResponse> HandlePromptsListAsync(FastMCPServer server, JsonRpcRequest request)
     {
-        var prompts = server.Prompts.Select(m => {
+        var prompts = server.Prompts.Values.Select(m => {
             var attr = m.GetCustomAttribute<McpPromptAttribute>();
             return new Prompt 
             {
@@ -148,13 +150,12 @@ public class McpRequestHandler
             }
             
             string promptName = nameProp.GetString() ?? "";
-            var promptMethod = server.Prompts.FirstOrDefault(m => 
-                (m.GetCustomAttribute<McpPromptAttribute>()?.Name ?? m.Name)
-                .Equals(promptName, StringComparison.OrdinalIgnoreCase));
-            if (promptMethod == null)
+            
+            if (!server.Prompts.TryGetValue(promptName, out var promptMethod))
             {
                 return JsonRpcResponse.FromError(JsonRpcError.ErrorCodes.MethodNotFound, $"Prompt '{promptName}' not found", request.Id);
             }
+
             JsonElement arguments = root.TryGetProperty("arguments", out var argsProp) ? argsProp : JsonDocument.Parse("{}").RootElement;
             // Reuse binding logic
             var args = BindParameters(promptMethod, arguments, user, session, request.Id, cancellationToken);
@@ -171,15 +172,12 @@ public class McpRequestHandler
         // 1. Discovery
         MethodInfo? toolMethod = null;
         object? instance = null;
-        toolMethod = server.Tools.FirstOrDefault(t =>
-            (t.GetCustomAttribute<McpToolAttribute>()?.Name ?? t.Name)
-                .Equals(request.Method, StringComparison.OrdinalIgnoreCase));
-        if (toolMethod is null)
+
+        if (server.Tools.TryGetValue(request.Method, out var foundMethod))
         {
-            toolMethod = server.Resources.FirstOrDefault(t =>
-                (t.GetCustomAttribute<McpResourceAttribute>()?.Uri?.Split('/').Last() ?? t.Name)
-                    .Equals(request.Method, StringComparison.OrdinalIgnoreCase));
+            toolMethod = foundMethod;
         }
+
         if (toolMethod is null && server.DynamicTools.TryGetValue(request.Method, out var dynamicToolHandler))
         {
             if (dynamicToolHandler is IDynamicMcpToolHandler mcpDynamicToolHandler)
@@ -393,15 +391,19 @@ public class McpRequestHandler
 
     private JsonRpcResponse HandleToolsList(FastMCPServer server, JsonRpcRequest request)
     {
-        var tools = server.Tools.Select(t => {
-            var attr = t.GetCustomAttribute<McpToolAttribute>();
+        var tools = server.Tools.Select(kvp => {
+            var name = kvp.Key;          // CORRECT: Use the Dictionary Key (prefixed name)
+            var method = kvp.Value;      // CORRECT: Get MethodInfo from Value
+            var attr = method.GetCustomAttribute<McpToolAttribute>();
+            
             return new Tool
             {
-                Name = attr?.Name ?? t.Name,
+                Name = name,
                 Description = attr?.Description ?? "",
-                InputSchema = GenerateSchema(t)
+                InputSchema = GenerateSchema(method)
             };
         }).ToList();
+        
         // Add Dynamic tools if any
         foreach (var dynamicTool in server.DynamicTools)
         {
@@ -412,18 +414,77 @@ public class McpRequestHandler
     }
     private JsonRpcResponse HandleResourcesList(FastMCPServer server, JsonRpcRequest request)
     {
-        var resources = server.Resources.Select(method => {
+        var resources = server.Resources.Select(kvp => {
+            var name = kvp.Key;
+            var method = kvp.Value;
             var attr = method.GetCustomAttribute<McpResourceAttribute>();
+            
             return new Resource
             {
                 Uri = attr?.Uri ?? "",
-                Name = attr?.Name ?? method.Name,
+                Name = name,
                 Description = attr?.Description,
                 MimeType = attr?.MimeType
             };
         }).ToList();
         return new JsonRpcResponse { Id = request.Id, Result = new ListResourcesResult { Resources = resources } };
     }
+
+    private async Task<JsonRpcResponse> HandleResourcesReadAsync(FastMCPServer server, JsonRpcRequest request, ClaimsPrincipal? user, IMcpSession? session, CancellationToken cancellationToken)
+    {
+        if (request.Params is not JsonElement root || root.ValueKind != JsonValueKind.Object)
+        {
+             return JsonRpcResponse.FromError(JsonRpcError.ErrorCodes.InvalidParams, "Invalid params for resources/read", request.Id);
+        }
+
+        if (!root.TryGetProperty("uri", out var uriProp))
+        {
+             return JsonRpcResponse.FromError(JsonRpcError.ErrorCodes.InvalidParams, "Missing 'uri' parameter", request.Id);
+        }
+        string uri = uriProp.GetString() ?? "";
+
+        // Need to find key by URI suffix or perform lookup if key == uri
+        // Since we key resources by Name/Suffix, we try exact match first
+        // Or if you keyed them by URI, use that. 
+        // Assuming registration keyed them by "Name" or "Uri Suffix":
+        
+        MethodInfo? resourceMethod = null;
+        
+        // Try efficient lookup if the URI matches the key exactly (often true for aliases)
+        if (server.Resources.TryGetValue(uri, out var exactMatch))
+        {
+            resourceMethod = exactMatch;
+        }
+        else 
+        {
+            // Fallback: Scan values if your keys don't match URIs exactly (e.g. key is "logs", URI is "file:///logs")
+            // Ideally registration ensures Key == URI so this isn't needed.
+            resourceMethod = server.Resources.Values.FirstOrDefault(m => 
+                (m.GetCustomAttribute<McpResourceAttribute>()?.Uri ?? "").Equals(uri, StringComparison.OrdinalIgnoreCase));
+        }
+
+        if (resourceMethod == null)
+        {
+             return JsonRpcResponse.FromError(JsonRpcError.ErrorCodes.MethodNotFound, $"Resource '{uri}' not found", request.Id);
+        }
+
+        try 
+        {
+            // Resources usually take no args or specific args? 
+            // Standard MCP: resources/read takes "uri". 
+            // Our implementation: Invoke method
+            var args = BindParameters(resourceMethod, root, user, session, request.Id, cancellationToken);
+            var result = await InvokeMethodAsync(resourceMethod, null, args);
+            
+            // Result should be List<ResourceContents> or similar
+            return new JsonRpcResponse { Id = request.Id, Result = new { contents = result } };
+        }
+        catch (Exception ex)
+        {
+             return JsonRpcResponse.FromError(JsonRpcError.ErrorCodes.InternalError, ex.Message, request.Id);
+        }
+    }
+
     private InputSchema GenerateSchema(MethodInfo method)
     {
         var schema = new InputSchema();

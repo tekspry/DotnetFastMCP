@@ -610,6 +610,22 @@ public class LoggingMiddleware : IMcpMiddleware
 builder.AddMcpMiddleware<LoggingMiddleware>();
 ```
 
+### Server Composition (NEW!)
+
+Mount other MCP servers into your main server instantiation. This supports a "Micro-MCP" architecture where you can compose a robust agent from smaller, focused modules.
+
+```csharp
+// 1. Create Sub-Server (e.g. GitHub Tools)
+var githubServer = new FastMCPServer("GitHub");
+// ... register tools ...
+
+// 2. Import into Main Server with "gh" prefix
+builder.AddServer(githubServer, prefix: "gh");
+
+// Result:
+// The client sees tools named: "gh_create_issue", "gh_get_repo", etc.
+```
+
 ### OAuth Proxy
 
 DotnetFastMCP includes a built-in **OAuth Proxy** that provides:
@@ -716,7 +732,12 @@ For bug reports and feature requests, please use [GitHub Issues](https://github.
 
 ## ✨ What's New
 
-### v1.6.0 - Middleware Interception (Latest)
+### v1.7.0 - Server Composition (Latest)
+- ✅ **Server Composition** - Mount other MCP servers as modules (Micro-MCPs)
+- ✅ **Namespacing** - Automatically prefix imported tools (e.g., `github_createIssue`)
+- ✅ **Zero-Overhead** - High-performance internal dictionary routing (O(1))
+
+### v1.6.0 - Middleware Interception
 - ✅ **Middleware Pipeline** - Intercept and modify requests/responses
 - ✅ **Critical Fixes** - Resolved Stdio transport initialization deadlocks
 - ✅ **Builder API** - Easy registration with `AddMcpMiddleware<T>`
@@ -759,7 +780,7 @@ For bug reports and feature requests, please use [GitHub Issues](https://github.
 
 ### Advanced Features
 - [x] **Middleware Interception** - Hooks for inspecting/modifying JSON-RPC messages
-- [ ] **Server Composition** - Ability to mount or import other MCP servers
+- [x] **Server Composition** - Ability to mount or import other MCP servers
 - [ ] **Storage Abstractions** - Interfaces for state persistence
 - [ ] **Background Tasks** - Patterns for long-running operations
 

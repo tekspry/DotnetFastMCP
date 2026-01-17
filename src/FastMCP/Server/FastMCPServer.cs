@@ -13,9 +13,9 @@ public class FastMCPServer
     public string Version { get; } = "1.0.0"; // Default version
     
     // Collections to store registered components
-    public List<MethodInfo> Tools { get; } = new();
-    public List<MethodInfo> Resources { get; } = new();
-    public List<MethodInfo> Prompts { get; } = new();
+    public Dictionary<string, MethodInfo> Tools { get; } = new(StringComparer.OrdinalIgnoreCase);
+    public Dictionary<string, MethodInfo> Resources { get; } = new(StringComparer.OrdinalIgnoreCase);
+    public Dictionary<string, MethodInfo> Prompts { get; } = new(StringComparer.OrdinalIgnoreCase);
 
     public List<Tool> ToolsMetadata { get; } = new();
     public List<Resource> ResourcesMetadata { get; } = new();
@@ -27,5 +27,39 @@ public class FastMCPServer
     public FastMCPServer(string name)
     {
         Name = name;
+    }
+
+    public void Import(FastMCPServer other, string? prefix = null)
+    {
+        string p = string.IsNullOrEmpty(prefix) ? "" : $"{prefix}_";
+        // 1. Import Tools
+        foreach (var tool in other.Tools)
+        {
+            var newName = p + tool.Key;
+            if (Tools.TryAdd(newName, tool.Value))
+            {
+                // Clone metadata with new name
+                var existingMeta = other.ToolsMetadata.FirstOrDefault(m => m.Name == tool.Key);
+                if (existingMeta != null)
+                {
+                    ToolsMetadata.Add(new Tool 
+                    { 
+                        Name = newName, 
+                        Description = existingMeta.Description,
+                        InputSchema = existingMeta.InputSchema
+                    });
+                }
+            }
+        }
+        // 2. Import Resources
+        foreach (var resource in other.Resources)
+        {
+            Resources.TryAdd(p + resource.Key, resource.Value);            
+        }
+        // 3. Import Prompts
+        foreach (var prompt in other.Prompts)
+        {
+             Prompts.TryAdd(p + prompt.Key, prompt.Value);
+        }
     }
 }
