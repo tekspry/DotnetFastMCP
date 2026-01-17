@@ -13,6 +13,8 @@ using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Cors.Infrastructure;
 using FastMCP.Authentication.McpEndpoints;
+using FastMCP.Storage;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace FastMCP.Hosting;
 
@@ -75,6 +77,9 @@ public class McpServerBuilder
 
         _webAppBuilder.Services.AddAuthorization();
         // --- End Core Authentication and Authorization Setup ---
+
+        // NEW: Register Default Storage (TryAdd ensures user can override it)
+        _webAppBuilder.Services.TryAddSingleton<IMcpStorage, InMemoryMcpStorage>();
 
         // --- Rate Limiting Setup ---
         _webAppBuilder.Services.AddRateLimiter(rateLimiterOptions =>
@@ -348,6 +353,12 @@ public class McpServerBuilder
     public McpServerBuilder AddMcpMiddleware<TMiddleware>() where TMiddleware : class, IMcpMiddleware
     {
         _webAppBuilder.Services.AddSingleton<IMcpMiddleware, TMiddleware>();
+        return this;
+    }
+
+    public McpServerBuilder AddMcpStorage<T>() where T : class, IMcpStorage
+    {
+        _webAppBuilder.Services.AddSingleton<IMcpStorage, T>();
         return this;
     }
 

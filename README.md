@@ -626,6 +626,25 @@ builder.AddServer(githubServer, prefix: "gh");
 // The client sees tools named: "gh_create_issue", "gh_get_repo", etc.
 ```
 
+### Storage Abstractions (NEW!)
+
+FastMCP now includes a built-in state persistence layer. Tools can request `McpContext` to access `IMcpStorage`.
+
+```csharp
+[McpTool]
+public static async Task<string> SetValue(string key, string value, McpContext context)
+{
+    await context.Storage.SetAsync(key, value);
+    return "Saved!";
+}
+```
+
+The default implementation is **In-Memory**, but you can swap it for Redis, SQL, or File storage:
+
+```csharp
+builder.AddMcpStorage<MyRedisStorage>();
+```
+
 ### OAuth Proxy
 
 DotnetFastMCP includes a built-in **OAuth Proxy** that provides:
@@ -732,7 +751,12 @@ For bug reports and feature requests, please use [GitHub Issues](https://github.
 
 ## ✨ What's New
 
-### v1.7.0 - Server Composition (Latest)
+### v1.8.0 - Storage Abstractions (Latest)
+- ✅ **State Persistence** - Tools can now persist data via `McpContext.Storage`
+- ✅ **Pluggable Backends** - Swap in Redis/SQL/File storage easily
+- ✅ **In-Memory Default** - Zero-config built-in storage for development
+
+### v1.7.0 - Server Composition
 - ✅ **Server Composition** - Mount other MCP servers as modules (Micro-MCPs)
 - ✅ **Namespacing** - Automatically prefix imported tools (e.g., `github_createIssue`)
 - ✅ **Zero-Overhead** - High-performance internal dictionary routing (O(1))

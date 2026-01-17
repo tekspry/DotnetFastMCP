@@ -1,6 +1,6 @@
 using FastMCP.Protocol;
-using System.Threading;
-using System.Threading.Tasks;
+using FastMCP.Storage;
+
 namespace FastMCP;
 /// <summary>
 /// Provides access to the current request context and session interactions (logging, progress).
@@ -17,22 +17,28 @@ public class McpContext
     /// The cancellation token for the current request.
     /// </summary>
     public CancellationToken CancellationToken { get; }
-    public McpContext(IMcpSession session, object requestId, CancellationToken cancellationToken)
+
+    /// <summary>
+    /// Access to persistent storage.
+    /// </summary>
+    public IMcpStorage Storage { get; } 
+    public McpContext(IMcpSession session, object requestId, CancellationToken cancellationToken, IMcpStorage storage)
     {
         _session = session;
         RequestId = requestId;
         CancellationToken = cancellationToken;
+        Storage = storage;
     }
     /// <summary>
     /// Sends a log message to the client.
     /// </summary>
-    public async Task LogAsync(McpLogLevel level, string message, string? logger = null)
+    public Task LogAsync(McpLogLevel level, string message, string? logger = null)
     {
-        await _session.SendNotificationAsync("notifications/message", new
+        return _session.SendNotificationAsync("notifications/message", new 
         {
-            level = level.ToString().ToLower(),
-            logger,
-            data = message
+             level = level.ToString().ToLower(),
+             logger = "tool",
+             data = message
         }, CancellationToken);
     }
     

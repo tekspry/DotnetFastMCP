@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Authorization;
 using System.Reflection;
 using System.Security.Claims;
 using System.Text.Json;
-using System.Linq;
+using FastMCP.Storage;
 
 namespace FastMCP.Hosting;
 /// <summary>
@@ -14,11 +14,15 @@ namespace FastMCP.Hosting;
 public class McpRequestHandler
 {
     private readonly IAuthorizationService _authorizationService;
+    private readonly IMcpStorage _storage;
     private static readonly JsonSerializerOptions _jsonOptions = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
     private readonly McpMiddlewareDelegate _pipeline;
-    public McpRequestHandler(IAuthorizationService authorizationService, IEnumerable<IMcpMiddleware>? middlewares = null)
+    
+    public McpRequestHandler(IAuthorizationService authorizationService, IMcpStorage storage, IEnumerable<IMcpMiddleware>? middlewares = null)
     {
         _authorizationService = authorizationService;
+
+        _storage = storage;
          
         // Build the pipeline: The last step is executing the actual handler logic
         McpMiddlewareDelegate terminal = ExecuteHandlerAsync;
@@ -294,7 +298,7 @@ public class McpRequestHandler
             else if(pType == typeof(McpContext))
             {
                 var effectiveSession = session ?? new NoOpSession();
-                args[i] = new McpContext(effectiveSession, requestId ?? "unknown", cancellationToken);
+                args[i] = new McpContext(effectiveSession, requestId ?? "unknown", cancellationToken, _storage);
             }
              else if (pType == typeof(CancellationToken))
             {
