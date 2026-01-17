@@ -716,9 +716,13 @@ For bug reports and feature requests, please use [GitHub Issues](https://github.
 
 ## ✨ What's New
 
-### v1.5.0 - Native Client Library & Middleware (Latest)
+### v1.6.0 - Middleware Interception (Latest)
+- ✅ **Middleware Pipeline** - Intercept and modify requests/responses
+- ✅ **Critical Fixes** - Resolved Stdio transport initialization deadlocks
+- ✅ **Builder API** - Easy registration with `AddMcpMiddleware<T>`
+
+### v1.5.0 - Native Client Library
 - ✅ **McpClient** - Type-safe .NET client for consuming MCP servers
-- ✅ **Middleware** - Interception pipeline for requests/responses
 - ✅ **Transport Agnostic** - Support for both Stdio and SSE connections
 - ✅ **Notification Handling** - Events for real-time logs and progress
 
