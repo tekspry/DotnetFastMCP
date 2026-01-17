@@ -327,6 +327,14 @@ public class McpServerBuilder
         return app;
     }
 
+    // Inside McpServerBuilder class
+
+    public McpServerBuilder AddMcpMiddleware<TMiddleware>() where TMiddleware : class, IMcpMiddleware
+    {
+        _webAppBuilder.Services.AddSingleton<IMcpMiddleware, TMiddleware>();
+        return this;
+    }
+
 
 
     // Internal helper to expose the WebApplicationBuilder for extension methods
