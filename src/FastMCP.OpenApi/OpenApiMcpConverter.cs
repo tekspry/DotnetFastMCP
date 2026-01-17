@@ -50,7 +50,7 @@ public static class OpenApiMcpConverter
                 // For discovery purposes, also add a dummy method to the Tools list
                 // The McpProtocolMiddleware will need to check DynamicTools first before invoking
                 var dummyMethod = CreateDummyToolMethod(toolName, description);
-                server.Tools.Add(dummyMethod);
+                server.Tools.Add(toolName, dummyMethod);
             }
         }
     }

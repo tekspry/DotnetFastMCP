@@ -24,6 +24,7 @@ public class McpServerBuilder
 {
     private readonly WebApplicationBuilder _webAppBuilder;
     private readonly FastMCPServer _mcpServer;
+    public FastMCPServer Server => _mcpServer; 
     private string? _defaultChallengeScheme;
 
     private McpServerBuilder(FastMCPServer mcpServer, string[]? args)
@@ -143,22 +144,37 @@ public class McpServerBuilder
 
         foreach (var method in methods)
         {
-            if (method.GetCustomAttribute<McpToolAttribute>() is not null)
+            var toolAttr = method.GetCustomAttribute<McpToolAttribute>();
+
+            if (toolAttr is not null)
             {
-                _mcpServer.Tools.Add(method);
+                var name = toolAttr.Name ?? method.Name;
+                _mcpServer.Tools.TryAdd(name, method);
             }
 
-            if (method.GetCustomAttribute<McpResourceAttribute>() is not null)
+            var resAttr = method.GetCustomAttribute<McpResourceAttribute>();
+
+            if (resAttr is not null)
             {
-                _mcpServer.Resources.Add(method);
+                var name = resAttr.Uri?.Split('/').Last() ?? method.Name;
+                _mcpServer.Resources.TryAdd(name, method);
             }
 
-            if (method.GetCustomAttribute<McpPromptAttribute>() is not null)
+            var promptAttr = method.GetCustomAttribute<McpPromptAttribute>();
+
+            if (promptAttr is not null)
             {
-                _mcpServer.Prompts.Add(method);
+                var name = promptAttr.Name ?? method.Name;
+                _mcpServer.Prompts.TryAdd(name, method);
             }
         }
 
+        return this;
+    }
+
+    public McpServerBuilder AddServer(FastMCPServer other, string? prefix = null)
+    {
+        _mcpServer.Import(other, prefix);
         return this;
     }
 
