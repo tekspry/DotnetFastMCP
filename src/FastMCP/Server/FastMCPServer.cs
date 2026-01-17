@@ -10,6 +10,7 @@ namespace FastMCP.Server;
 public class FastMCPServer
 {
     public string Name { get; }
+    public string Version { get; } = "1.0.0"; // Default version
     
     // Collections to store registered components
     public List<MethodInfo> Tools { get; } = new();

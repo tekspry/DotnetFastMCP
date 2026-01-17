@@ -5,6 +5,8 @@ using Microsoft.AspNetCore.Authorization;
 using System.Reflection;
 using System.Security.Claims;
 using System.Text.Json;
+using System.Linq;
+
 namespace FastMCP.Hosting;
 /// <summary>
 /// A transport-agnostic handler for MCP JSON-RPC requests.
@@ -13,15 +15,39 @@ public class McpRequestHandler
 {
     private readonly IAuthorizationService _authorizationService;
     private static readonly JsonSerializerOptions _jsonOptions = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
-    public McpRequestHandler(IAuthorizationService authorizationService)
+    private readonly McpMiddlewareDelegate _pipeline;
+    public McpRequestHandler(IAuthorizationService authorizationService, IEnumerable<IMcpMiddleware>? middlewares = null)
     {
         _authorizationService = authorizationService;
+         
+        // Build the pipeline: The last step is executing the actual handler logic
+        McpMiddlewareDelegate terminal = ExecuteHandlerAsync;
+
+        // Wrap it in reverse order so the first registered middleware runs first
+        foreach (var middleware in (middlewares ?? Enumerable.Empty<IMcpMiddleware>()).Reverse())
+        {
+            var next = terminal;
+            terminal = (ctx, ct) => middleware.InvokeAsync(ctx, next, ct);
+        }
+        _pipeline = terminal;
     }
+    
     /// <summary>
     /// Handles a single JSON-RPC request and returns the response.
     /// </summary>
     public async Task<JsonRpcResponse> HandleRequestAsync(JsonRpcRequest request, FastMCPServer server, ClaimsPrincipal? user, IMcpSession? session = null, CancellationToken cancellationToken = default)
     {
+        var context = new McpMiddlewareContext(server, request, user, session);
+        return await _pipeline(context, cancellationToken);
+    }
+
+     private async Task<JsonRpcResponse> ExecuteHandlerAsync(McpMiddlewareContext context, CancellationToken cancellationToken)
+    {
+        var request = context.Request;
+        var server = context.Server;
+        var user = context.User;
+        var session = context.Session;
+        
         try
         {
             if (request == null || request.JsonRpc != "2.0" || string.IsNullOrEmpty(request.Method))
@@ -30,6 +56,12 @@ public class McpRequestHandler
             }
             switch (request.Method)
             {
+                case "initialize":
+                    return HandleInitialize(server, request);
+                case "notifications/initialized":
+                    return new JsonRpcResponse { Id = request.Id, Result = null }; // Ack
+                case "ping":
+                    return new JsonRpcResponse { Id = request.Id, Result = "pong" };
                 case "prompts/list":
                     return await HandlePromptsListAsync(server, request);
                 case "prompts/get":
@@ -407,5 +439,28 @@ public class McpRequestHandler
             }
         }
         return schema;
+    }
+
+    private JsonRpcResponse HandleInitialize(FastMCPServer server, JsonRpcRequest request)
+    {
+        return new JsonRpcResponse
+        {
+            Id = request.Id,
+            Result = new
+            {
+                protocolVersion = "2024-11-05", // Spec version
+                server = new
+                {
+                    name = server.Name,
+                    version = server.Version
+                },
+                capabilities = new
+                {
+                    tools = new { }, // We support tools
+                    resources = new { }, // We support resources
+                    prompts = new { } // We support prompts
+                }
+            }
+        };
     }
 }

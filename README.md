@@ -581,7 +581,34 @@ See [`mcp-authentication-guide.md`](mcp-authentication-guide.md) for:
 | [OktaOAuth](examples/Auth/OktaOAuth) | Okta authentication example | 5007 |
 | [AwsCognitoOAuth](examples/Auth/AwsCognitoOAuth) | AWS Cognito example | 5006 |
 
+
 ## 🏗️ Advanced Features
+
+### Middleware Interception (NEW!)
+
+Middleware allows you to intercept and modify JSON-RPC messages (requests and responses) flowing through the server pipeline. This is useful for logging, validation, modification, or custom monitoring.
+
+1.  **Define Middleware:** Implement `IMcpMiddleware`.
+2.  **Register Middleware:** Use `builder.AddMcpMiddleware<T>()`.
+
+```csharp
+public class LoggingMiddleware : IMcpMiddleware
+{
+    public async Task<JsonRpcResponse> InvokeAsync(McpMiddlewareContext context, McpMiddlewareDelegate next, CancellationToken ct)
+    {
+        Console.Error.WriteLine($"[LOG] Incoming: {context.Request.Method}");
+        
+        // Pass to next handler
+        var response = await next(context, ct);
+        
+        Console.Error.WriteLine($"[LOG] Completed. Error: {response.Error != null}");
+        return response;
+    }
+}
+
+// In Program.cs:
+builder.AddMcpMiddleware<LoggingMiddleware>();
+```
 
 ### OAuth Proxy
 
@@ -689,8 +716,9 @@ For bug reports and feature requests, please use [GitHub Issues](https://github.
 
 ## ✨ What's New
 
-### v1.5.0 - Native Client Library (Latest)
+### v1.5.0 - Native Client Library & Middleware (Latest)
 - ✅ **McpClient** - Type-safe .NET client for consuming MCP servers
+- ✅ **Middleware** - Interception pipeline for requests/responses
 - ✅ **Transport Agnostic** - Support for both Stdio and SSE connections
 - ✅ **Notification Handling** - Events for real-time logs and progress
 
@@ -726,7 +754,7 @@ For bug reports and feature requests, please use [GitHub Issues](https://github.
 - [x] **Client Library** - Native .NET client SDK for building MCP clients
 
 ### Advanced Features
-- [ ] **Middleware Interception** - Hooks for inspecting/modifying JSON-RPC messages
+- [x] **Middleware Interception** - Hooks for inspecting/modifying JSON-RPC messages
 - [ ] **Server Composition** - Ability to mount or import other MCP servers
 - [ ] **Storage Abstractions** - Interfaces for state persistence
 - [ ] **Background Tasks** - Patterns for long-running operations
