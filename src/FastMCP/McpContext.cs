@@ -1,5 +1,6 @@
 using FastMCP.Protocol;
 using FastMCP.Storage;
+using FastMCP.Background;
 
 namespace FastMCP;
 /// <summary>
@@ -22,13 +23,36 @@ public class McpContext
     /// Access to persistent storage.
     /// </summary>
     public IMcpStorage Storage { get; } 
-    public McpContext(IMcpSession session, object requestId, CancellationToken cancellationToken, IMcpStorage storage)
+    /// <summary>
+    /// 
+    /// </summary>
+    private readonly IBackgroundTaskQueue? _backgroundQueue;
+    
+    public McpContext(IMcpSession session, object requestId, 
+        CancellationToken cancellationToken, IMcpStorage storage, IBackgroundTaskQueue? backgroundQueue = null)
     {
         _session = session;
         RequestId = requestId;
         CancellationToken = cancellationToken;
         Storage = storage;
+        _backgroundQueue = backgroundQueue;
     }
+
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="workItem"></param>
+    /// <returns></returns>
+    /// <exception cref="InvalidOperationException"></exception>
+    public async Task RunInBackground(Func<CancellationToken, ValueTask> workItem)
+    {
+        if (_backgroundQueue == null)
+        {
+            throw new InvalidOperationException("Background task queue is not configured.");
+        }
+        await _backgroundQueue.QueueBackgroundWorkItemAsync(workItem);
+    }
+
     /// <summary>
     /// Sends a log message to the client.
     /// </summary>

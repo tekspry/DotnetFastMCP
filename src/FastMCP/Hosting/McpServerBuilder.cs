@@ -15,6 +15,7 @@ using Microsoft.AspNetCore.Cors.Infrastructure;
 using FastMCP.Authentication.McpEndpoints;
 using FastMCP.Storage;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using FastMCP.Background;
 
 namespace FastMCP.Hosting;
 
@@ -128,6 +129,11 @@ public class McpServerBuilder
         // --- End CORS Setup ---
 
         _webAppBuilder.Services.AddMcpSse();
+
+        //Add Backgroud Task Queue Services
+        _webAppBuilder.Services.AddSingleton<IBackgroundTaskQueue, McpBackgroundTaskQueue>();
+        
+        _webAppBuilder.Services.AddHostedService<McpBackgroundService>();
 
     }
 

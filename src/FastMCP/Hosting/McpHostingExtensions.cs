@@ -9,7 +9,27 @@ public static class McpHostingExtensions
         if (args.Contains("--stdio"))
         {
             var transport = app.Services.GetRequiredService<McpStdioTransport>();
-            await transport.RunAsync();
+            
+            // CRITICAL: We must manually start IHostedServices (like BackgroundService)
+            // because we are NOT calling app.RunAsync() which usually does this.
+            var hostedServices = app.Services.GetServices<IHostedService>();
+            foreach (var service in hostedServices)
+            {
+                await service.StartAsync(CancellationToken.None);
+            }
+
+            try 
+            {
+                await transport.RunAsync();
+            }
+            finally
+            {
+                // Graceful shutdown
+                foreach (var service in hostedServices.Reverse())
+                {
+                    await service.StopAsync(CancellationToken.None);
+                }
+            }
         }
         else
         {
