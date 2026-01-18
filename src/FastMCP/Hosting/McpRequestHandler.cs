@@ -6,6 +6,7 @@ using System.Reflection;
 using System.Security.Claims;
 using System.Text.Json;
 using FastMCP.Storage;
+using FastMCP.Background;
 
 namespace FastMCP.Hosting;
 /// <summary>
@@ -15,14 +16,18 @@ public class McpRequestHandler
 {
     private readonly IAuthorizationService _authorizationService;
     private readonly IMcpStorage _storage;
+    private readonly IBackgroundTaskQueue? _backgroundQueue;
     private static readonly JsonSerializerOptions _jsonOptions = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
     private readonly McpMiddlewareDelegate _pipeline;
     
-    public McpRequestHandler(IAuthorizationService authorizationService, IMcpStorage storage, IEnumerable<IMcpMiddleware>? middlewares = null)
+    public McpRequestHandler(IAuthorizationService authorizationService, IMcpStorage storage, 
+        IServiceProvider serviceProvider, IEnumerable<IMcpMiddleware>? middlewares = null)
     {
         _authorizationService = authorizationService;
 
         _storage = storage;
+        
+        _backgroundQueue = serviceProvider.GetService(typeof(IBackgroundTaskQueue)) as IBackgroundTaskQueue;
          
         // Build the pipeline: The last step is executing the actual handler logic
         McpMiddlewareDelegate terminal = ExecuteHandlerAsync;
@@ -298,7 +303,8 @@ public class McpRequestHandler
             else if(pType == typeof(McpContext))
             {
                 var effectiveSession = session ?? new NoOpSession();
-                args[i] = new McpContext(effectiveSession, requestId ?? "unknown", cancellationToken, _storage);
+                args[i] = new McpContext(effectiveSession, requestId ?? "unknown", 
+                    cancellationToken, _storage, _backgroundQueue);
             }
              else if (pType == typeof(CancellationToken))
             {

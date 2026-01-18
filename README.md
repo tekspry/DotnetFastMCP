@@ -645,6 +645,24 @@ The default implementation is **In-Memory**, but you can swap it for Redis, SQL,
 builder.AddMcpStorage<MyRedisStorage>();
 ```
 
+### Background Tasks (NEW!)
+
+FastMCP allows tools to fire-and-forget long running operations using `RunInBackground`.
+
+```csharp
+[McpTool]
+public static async Task<string> ProcessFile(string file, McpContext context)
+{
+    await context.RunInBackground(async (ct) => 
+    {
+        // This runs without blocking the client
+        await HeavyProcessing(file, ct);
+    });
+
+    return "Processing started!";
+}
+```
+
 ### OAuth Proxy
 
 DotnetFastMCP includes a built-in **OAuth Proxy** that provides:
@@ -751,7 +769,12 @@ For bug reports and feature requests, please use [GitHub Issues](https://github.
 
 ## ✨ What's New
 
-### v1.8.0 - Storage Abstractions (Latest)
+### v1.9.0 - Background Tasks (Latest)
+- ✅ **Fire-and-Forget** - Offload long-running operations from tools
+- ✅ **Non-Blocking** - Return immediate responses to clients
+- ✅ **Hosted Service** - Built-in queuing mechanism using Channels
+
+### v1.8.0 - Storage Abstractions
 - ✅ **State Persistence** - Tools can now persist data via `McpContext.Storage`
 - ✅ **Pluggable Backends** - Swap in Redis/SQL/File storage easily
 - ✅ **In-Memory Default** - Zero-config built-in storage for development
@@ -805,8 +828,8 @@ For bug reports and feature requests, please use [GitHub Issues](https://github.
 ### Advanced Features
 - [x] **Middleware Interception** - Hooks for inspecting/modifying JSON-RPC messages
 - [x] **Server Composition** - Ability to mount or import other MCP servers
-- [ ] **Storage Abstractions** - Interfaces for state persistence
-- [ ] **Background Tasks** - Patterns for long-running operations
+- [x] **Storage Abstractions** - Interfaces for state persistence
+- [x] **Background Tasks** - Patterns for long-running operations
 
 ### UI & Metadata
 - [ ] **Icons** - Support for tool and server icons
