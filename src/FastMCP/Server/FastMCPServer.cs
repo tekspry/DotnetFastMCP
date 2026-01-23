@@ -11,6 +11,7 @@ public class FastMCPServer
 {
     public string Name { get; }
     public string Version { get; } = "1.0.0"; // Default version
+    public string? Icon { get; set; }
     
     // Collections to store registered components
     public Dictionary<string, MethodInfo> Tools { get; } = new(StringComparer.OrdinalIgnoreCase);

@@ -9,6 +9,7 @@ public sealed class McpToolAttribute : Attribute
 {
     public string? Name { get; }
     public string? Description { get; set; }
+    public string? Icon { get; set; }
 
     public McpToolAttribute(string? name = null)
     {

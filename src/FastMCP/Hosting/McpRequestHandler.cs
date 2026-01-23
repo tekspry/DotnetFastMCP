@@ -131,6 +131,7 @@ public class McpRequestHandler
             {
                 Name = attr?.Name ?? m.Name,
                 Description = attr?.Description,
+                Icon = attr?.Icon,
                 Arguments = m.GetParameters()
                     .Where(p => p.ParameterType != typeof(ClaimsPrincipal))
                     .Select(p => new PromptArgument
@@ -410,6 +411,7 @@ public class McpRequestHandler
             {
                 Name = name,
                 Description = attr?.Description ?? "",
+                Icon = attr?.Icon,
                 InputSchema = GenerateSchema(method)
             };
         }).ToList();
@@ -434,6 +436,7 @@ public class McpRequestHandler
                 Uri = attr?.Uri ?? "",
                 Name = name,
                 Description = attr?.Description,
+                Icon = attr?.Icon,
                 MimeType = attr?.MimeType
             };
         }).ToList();
@@ -523,7 +526,8 @@ public class McpRequestHandler
                 server = new
                 {
                     name = server.Name,
-                    version = server.Version
+                    version = server.Version,
+                    icon = server.Icon
                 },
                 capabilities = new
                 {

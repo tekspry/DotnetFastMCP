@@ -13,4 +13,7 @@ public class Prompt
     public string? Description { get; set; }
     [JsonPropertyName("arguments")]
     public List<PromptArgument>? Arguments { get; set; }
+
+     [JsonPropertyName("icon")]
+    public string? Icon { get; set; }
 }

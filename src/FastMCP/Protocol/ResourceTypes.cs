@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace FastMCP.Protocol;
 
 public class ListResourcesResult
@@ -10,6 +12,9 @@ public class Resource
     public string Uri { get; set; } = "";
     public string Name { get; set; } = "";
     public string? Description { get; set; }
+
+    [JsonPropertyName("icon")]
+    public string? Icon { get; set; }
     public string? MimeType { get; set; }
 }
 

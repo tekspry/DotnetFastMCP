@@ -663,6 +663,19 @@ public static async Task<string> ProcessFile(string file, McpContext context)
 }
 ```
 
+### Icons Support (NEW!)
+
+Enhance the user interface of clients by providing icons for your server and tools.
+
+```csharp
+// Server Icon
+server.Icon = "https://myserver.com/logo.png";
+
+// Tool Icon
+[McpTool(Icon = "https://myserver.com/tools/calc.png")]
+public static int Add(int a, int b) => a + b;
+```
+
 ### OAuth Proxy
 
 DotnetFastMCP includes a built-in **OAuth Proxy** that provides:
@@ -769,7 +782,12 @@ For bug reports and feature requests, please use [GitHub Issues](https://github.
 
 ## ✨ What's New
 
-### v1.9.0 - Background Tasks (Latest)
+### v1.10.0 - Icons Support (Latest)
+- ✅ **Server Icons** - Define a brand icon for your MCP server
+- ✅ **Tool/Resource Icons** - Visually distinguish capabilities
+- ✅ **UI/UX Enhancement** - Enable richer client experiences
+
+### v1.9.0 - Background Tasks
 - ✅ **Fire-and-Forget** - Offload long-running operations from tools
 - ✅ **Non-Blocking** - Return immediate responses to clients
 - ✅ **Hosted Service** - Built-in queuing mechanism using Channels
@@ -832,7 +850,7 @@ For bug reports and feature requests, please use [GitHub Issues](https://github.
 - [x] **Background Tasks** - Patterns for long-running operations
 
 ### UI & Metadata
-- [ ] **Icons** - Support for tool and server icons
+- [x] **Icons** - Support for tool and server icons
 - [ ] **Binary Content** - Helpers for handling Image and Audio content types
 - [ ] **Multi-factor authentication (MFA)** - For OAuth providers
 
