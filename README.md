@@ -676,6 +676,24 @@ server.Icon = "https://myserver.com/logo.png";
 public static int Add(int a, int b) => a + b;
 ```
 
+### Binary Content Support (NEW!)
+
+Return rich content like Images from your tools and prompts.
+
+```csharp
+[McpTool]
+public static CallToolResult GetSnapshot()
+{
+    return new CallToolResult 
+    {
+        Content = new List<ContentItem> 
+        {
+            new ImageContent { Data = "base64...", MimeType = "image/png" }
+        }
+    };
+}
+```
+
 ### OAuth Proxy
 
 DotnetFastMCP includes a built-in **OAuth Proxy** that provides:
@@ -782,7 +800,12 @@ For bug reports and feature requests, please use [GitHub Issues](https://github.
 
 ## ✨ What's New
 
-### v1.10.0 - Icons Support (Latest)
+### v1.11.0 - Binary Content Support (Latest)
+- ✅ **Polymorphic Content** - Support for mixed Text and Image responses
+- ✅ **Image Support** - Return Base64 encoded images from tools
+- ✅ **Multimodal Prompts** - Embbed images in prompts for LLM context
+
+### v1.10.0 - Icons Support
 - ✅ **Server Icons** - Define a brand icon for your MCP server
 - ✅ **Tool/Resource Icons** - Visually distinguish capabilities
 - ✅ **UI/UX Enhancement** - Enable richer client experiences
