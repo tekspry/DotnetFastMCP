@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace FastMCP.Protocol;
 
 public class ListToolsResult
@@ -9,8 +11,12 @@ public class Tool
 {
     public string Name { get; set; } = "";
     public string Description { get; set; } = "";
+    
+    [JsonPropertyName("icon")]
+    public string? Icon { get; set; }
     public InputSchema InputSchema { get; set; } = new();
 }
+
 
 public class InputSchema
 {

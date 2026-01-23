@@ -7,6 +7,7 @@ public sealed class McpPromptAttribute : Attribute
 {
     public string? Name { get; }
     public string? Description { get; set; }
+    public string? Icon { get; set; }
     public McpPromptAttribute(string? name = null)
     {
         Name = name;

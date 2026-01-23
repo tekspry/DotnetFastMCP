@@ -11,6 +11,7 @@ public sealed class McpResourceAttribute : Attribute
     public string? Name { get; set; }
     public string? Description { get; set; }
     public string? MimeType { get; set; }
+    public string? Icon { get; set; }
     
     public McpResourceAttribute(string uri, string? name = null)
     {
