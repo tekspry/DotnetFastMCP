@@ -24,7 +24,10 @@ public static class EngineeringPrompts
                 new PromptMessage 
                 { 
                     Role = "user", 
-                    Content = new { type = "text", text = $"You are an expert static analysis tool. Please analyze this {language} code for bugs, performance issues, and style violations:\n\n{code}" } 
+                    Content = new TextContent
+                    {
+                         Text =  $"You are an expert static analysis tool. Please analyze this {language} code for bugs, performance issues, and style violations:\n\n{code}"
+                    }
                 }
             }
         };
@@ -44,7 +47,10 @@ public static class EngineeringPrompts
                  new PromptMessage 
                 { 
                     Role = "user", 
-                    Content = new { type = "text", text = $"Write a comprehensive unit test using xUnit for a function named '{functionName}'.\nRequirements:\n{requirements}" } 
+                    Content = new TextContent 
+                    { 
+                        Text = $"Write a comprehensive unit test using xUnit for a function named '{functionName}'.\nRequirements:\n{requirements}" 
+                    }  
                 }
             }
         };

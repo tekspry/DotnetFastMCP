@@ -24,3 +24,11 @@ public class InputSchema
     public Dictionary<string, object> Properties { get; set; } = new();
     public List<string> Required { get; set; } = new();
 }
+
+public class CallToolResult
+{
+    [JsonPropertyName("content")]
+    public List<ContentItem> Content { get; set; } = new();
+    [JsonPropertyName("isError")]
+    public bool IsError { get; set; }
+}

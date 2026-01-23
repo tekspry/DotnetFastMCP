@@ -179,15 +179,15 @@ public class McpRequestHandler
     }
     private async Task<JsonRpcResponse> HandleToolExecutionAsync(FastMCPServer server, JsonRpcRequest request, ClaimsPrincipal? user, IMcpSession? session, CancellationToken cancellationToken)
     {
-        // 1. Discovery
+         // ---------------------------------------------------------
+        // 1. Discovery (Unchanged)
+        // ---------------------------------------------------------
         MethodInfo? toolMethod = null;
         object? instance = null;
-
         if (server.Tools.TryGetValue(request.Method, out var foundMethod))
         {
             toolMethod = foundMethod;
         }
-
         if (toolMethod is null && server.DynamicTools.TryGetValue(request.Method, out var dynamicToolHandler))
         {
             if (dynamicToolHandler is IDynamicMcpToolHandler mcpDynamicToolHandler)
@@ -198,14 +198,20 @@ public class McpRequestHandler
         }
         if (toolMethod is null)
         {
+            // Standard JSON-RPC error for method not found
             return JsonRpcResponse.FromError(JsonRpcError.ErrorCodes.MethodNotFound, $"Method '{request.Method}' not found.", request.Id);
         }
-        // 2. Authorization
+         // ---------------------------------------------------------
+        // 2. Authorization (Unchanged)
+        // ---------------------------------------------------------
         if (!await AuthorizeMethodAsync(toolMethod, instance, user))
         {
             return JsonRpcResponse.FromError(JsonRpcError.ErrorCodes.InternalError, "Unauthorized or Forbidden.", request.Id);
         }
-        // 3. Binding
+
+        // ---------------------------------------------------------
+        // 3. Binding (Unchanged)
+        // ---------------------------------------------------------
         object?[] args;
         try
         {
@@ -222,14 +228,74 @@ public class McpRequestHandler
         {
             return JsonRpcResponse.FromError(JsonRpcError.ErrorCodes.InvalidParams, $"Invalid parameters: {ex.Message}", request.Id);
         }
-        // 4. Invocation
+        
+        // ---------------------------------------------------------
+        // 4. Invocation (UPDATED for Binary Content)
+        // ---------------------------------------------------------
         try
         {
             var result = await InvokeMethodAsync(toolMethod, instance, args);
-            return new JsonRpcResponse { Id = request.Id, Result = result };
+
+            // Case A: method returns 'CallToolResult' directly (Full control: error state, complex content)
+            if (result is CallToolResult toolResult)
+            {
+                return new JsonRpcResponse { Id = request.Id, Result = toolResult };
+            }
+            
+            // Case B: method returns 'List<ContentItem>' or 'IEnumerable<ContentItem>' (Mixed Text/Image)
+            else if (result is IEnumerable<ContentItem> contentList)
+            {
+                return new JsonRpcResponse 
+                { 
+                    Id = request.Id, 
+                    Result = new CallToolResult 
+                    { 
+                        Content = contentList.ToList(),
+                        IsError = false 
+                    } 
+                };
+            }
+            // Case C: method returns a single 'ContentItem' (e.g. just one Image)
+            else if (result is ContentItem singleContent)
+            {
+                return new JsonRpcResponse 
+                { 
+                    Id = request.Id, 
+                    Result = new CallToolResult 
+                    { 
+                        Content = new List<ContentItem> { singleContent },
+                        IsError = false 
+                    } 
+                };
+            }            
+            // Case D: Default / Legacy (Simple string or object) -> Wrap in TextContent
+            else 
+            {
+                // Serialize complex objects to JSON string, or use ToString() for primitives
+                string textContent = result switch 
+                {
+                    null => "null",
+                    string s => s,
+                    JsonElement je => je.ToString(),
+                    _ => JsonSerializer.Serialize(result, _jsonOptions)
+                };
+                return new JsonRpcResponse 
+                { 
+                    Id = request.Id, 
+                    Result = new CallToolResult 
+                    { 
+                        Content = new List<ContentItem> 
+                        { 
+                            new TextContent { Text = textContent } 
+                        },
+                        IsError = false
+                    } 
+                };
+            }
         }
         catch (Exception ex)
         {
+            // Return internal error if tool throws
             return JsonRpcResponse.FromError(JsonRpcError.ErrorCodes.InternalError, $"Method execution error: {ex.InnerException?.Message ?? ex.Message}", request.Id);
         }
     }
