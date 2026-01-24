@@ -30,6 +30,7 @@ DotnetFastMCP provides a clean, attribute-based approach to building MCP servers
 - ✅ **Sensible Defaults** - Pre-configured scopes for common use cases
 - ✅ **Fine-Grained Authorization** - Protect tools with `[Authorize]` attribute
 - ✅ **Claims-Based Access** - Access user information from authenticated requests
+- ✅ **MFA Support** - Enforce Multi-Factor Authentication for sensitive tools
 
 #### 🔌 Native Client Library (NEW!)
 - ✅ **McpClient** - Type-safe .NET client for consuming any MCP server
@@ -817,6 +818,11 @@ For bug reports and feature requests, please use [GitHub Issues](https://github.
 
 ## ✨ What's New
 
+### v1.12.0 - MFA Support (Latest)
+- 🛡️ **MFA Enforcement** - Require `mfa` AMR claim for sensitive tools
+- ✅ **Granular Control** - Enable per-tool using `[AuthorizeMcpTool(RequireMfa=true)]`
+- 🔒 **Enhanced Security** - Standards-based multi-factor authentication check
+
 ### v1.11.0 - Binary Content Support (Latest)
 - ✅ **Polymorphic Content** - Support for mixed Text and Image responses
 - ✅ **Image Support** - Return Base64 encoded images from tools
@@ -906,8 +912,8 @@ public async Task<string> RememberMe(string name, McpContext context)
 
 ### UI & Metadata
 - [x] **Icons** - Support for tool and server icons
-- [ ] **Binary Content** - Helpers for handling Image and Audio content types
-- [ ] **Multi-factor authentication (MFA)** - For OAuth providers
+- [x] **Binary Content** - Helpers for handling Image and Audio content types
+- [x] **Multi-factor authentication (MFA)** - For OAuth providers
 
 ---
 
