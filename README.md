@@ -626,7 +626,24 @@ builder.AddServer(githubServer, prefix: "gh");
 // The client sees tools named: "gh_create_issue", "gh_get_repo", etc.
 ```
 
-### Storage Abstractions (NEW!)
+### MFA Support (NEW!)
+
+Enforce Multi-Factor Authentication for sensitive tools.
+
+```csharp
+[McpTool("transfer_funds")]
+[AuthorizeMcpTool(RequireMfa = true)]
+public static string TransferFunds()
+{
+    return "Transferred!";
+}
+```
+
+-   **MFA Check**: Verifies `amr` claim contains `mfa`.
+-   **Security**: Provides granular protection for critical operations.
+
+### Storage Abstraction
+s (NEW!)
 
 FastMCP now includes a built-in state persistence layer. Tools can request `McpContext` to access `IMcpStorage`.
 
@@ -861,8 +878,23 @@ For bug reports and feature requests, please use [GitHub Issues](https://github.
 
 ### Core Functionality
 - [x] **Protocol Discovery** - Dynamic discovery of Tools, Resources, and Prompts
-- [x] **Context & Interaction** - Access logging, progress reporting, and client sampling via `Context` object
-- [x] **Stdio Transport** - Support for standard input/output transport (essential for Claude Desktop)
+- [x] **Context & Interaction** - Access logging, progress reporting, and client sampling via `Context`### 💾 Storage Abstraction
+
+FastMCP provides a built-in state management system.
+
+```csharp
+[McpTool("remember_me")]
+public async Task<string> RememberMe(string name, McpContext context)
+{
+    await context.Storage.SetAsync("last_user", name);
+    return $"I will remember you, {name}!";
+}
+```
+
+-   **Interfaces**: `IMcpStorage` for custom persistence (Redis, File, etc).
+-   **Default**: `InMemoryMcpStorage` (development only).
+-   **Injection**: `builder.AddMcpStorage<MyStorage>()`.
+** - Support for standard input/output transport (essential for Claude Desktop)
 - [x] **SSE Transport** - Dedicated Server-Sent Events transport
 - [x] **Client Library** - Native .NET client SDK for building MCP clients
 

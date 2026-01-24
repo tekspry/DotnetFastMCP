@@ -7,4 +7,6 @@ public static class McpAuthenticationConstants
 {
     public const string ApplicationScheme = "McpApplication"; // Default scheme for signing users in/out
     public const string ChallengeScheme = "McpChallenge"; // Default scheme for challenging unauthenticated users
+    public const string AmrClaim = "amr";
+    public const string MfaValue = "mfa";
 }
