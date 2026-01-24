@@ -28,4 +28,9 @@ public sealed class AuthorizeMcpToolAttribute : Attribute
     /// Multiple schemes can be specified as a comma-separated string.
     /// </summary>
     public string? AuthenticationSchemes { get; set; }
+    /// <summary>
+    /// Gets or sets a value indicating whether Multi-Factor Authentication (MFA) is required.
+    /// If true, the user's token must contain the 'amr' claim with value 'mfa'.
+    /// </summary>
+    public bool RequireMfa { get; set; }
 }

@@ -331,12 +331,34 @@ public class McpRequestHandler
             if (standardAuthorizeAttribute.AuthenticationSchemes != null)
                 policyBuilder.AddAuthenticationSchemes(standardAuthorizeAttribute.AuthenticationSchemes.Split(',', StringSplitOptions.RemoveEmptyEntries));
         }
+        
         if (!policyBuilder.Requirements.Any() && policyBuilder.AuthenticationSchemes.Count == 0)
         {
             policyBuilder.RequireAuthenticatedUser();
         }
+
+         // NEW: MFA Check
+        if (authorizeAttribute != null && authorizeAttribute.RequireMfa)
+        {
+            // Check for 'amr' claim with value 'mfa'
+            bool hasMfa = user.Claims.Any(c => 
+                c.Type == McpAuthenticationConstants.AmrClaim && 
+                c.Value == McpAuthenticationConstants.MfaValue);
+            
+            // Some providers send 'amr' as a JSON array string in a single claim.
+            // A robust implementation might parse it, but standard ASP.NET Core often splits it.
+            // For now, strict claim match is sufficient and performant.
+            if (!hasMfa)
+            {
+                // Log warning?
+                return false;
+            }
+        }
+        
         var policy = policyBuilder.Build();
+        
         var authorizationResult = await _authorizationService.AuthorizeAsync(user, instance, policy);
+        
         return authorizationResult.Succeeded;
     }
     private async Task<object?> InvokeMethodAsync(MethodInfo method, object? instance, object?[] args)

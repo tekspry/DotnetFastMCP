@@ -30,6 +30,7 @@ DotnetFastMCP provides a clean, attribute-based approach to building MCP servers
 - ✅ **Sensible Defaults** - Pre-configured scopes for common use cases
 - ✅ **Fine-Grained Authorization** - Protect tools with `[Authorize]` attribute
 - ✅ **Claims-Based Access** - Access user information from authenticated requests
+- ✅ **MFA Support** - Enforce Multi-Factor Authentication for sensitive tools
 
 #### 🔌 Native Client Library (NEW!)
 - ✅ **McpClient** - Type-safe .NET client for consuming any MCP server
@@ -626,7 +627,24 @@ builder.AddServer(githubServer, prefix: "gh");
 // The client sees tools named: "gh_create_issue", "gh_get_repo", etc.
 ```
 
-### Storage Abstractions (NEW!)
+### MFA Support (NEW!)
+
+Enforce Multi-Factor Authentication for sensitive tools.
+
+```csharp
+[McpTool("transfer_funds")]
+[AuthorizeMcpTool(RequireMfa = true)]
+public static string TransferFunds()
+{
+    return "Transferred!";
+}
+```
+
+-   **MFA Check**: Verifies `amr` claim contains `mfa`.
+-   **Security**: Provides granular protection for critical operations.
+
+### Storage Abstraction
+s (NEW!)
 
 FastMCP now includes a built-in state persistence layer. Tools can request `McpContext` to access `IMcpStorage`.
 
@@ -800,6 +818,11 @@ For bug reports and feature requests, please use [GitHub Issues](https://github.
 
 ## ✨ What's New
 
+### v1.12.0 - MFA Support (Latest)
+- 🛡️ **MFA Enforcement** - Require `mfa` AMR claim for sensitive tools
+- ✅ **Granular Control** - Enable per-tool using `[AuthorizeMcpTool(RequireMfa=true)]`
+- 🔒 **Enhanced Security** - Standards-based multi-factor authentication check
+
 ### v1.11.0 - Binary Content Support (Latest)
 - ✅ **Polymorphic Content** - Support for mixed Text and Image responses
 - ✅ **Image Support** - Return Base64 encoded images from tools
@@ -861,8 +884,23 @@ For bug reports and feature requests, please use [GitHub Issues](https://github.
 
 ### Core Functionality
 - [x] **Protocol Discovery** - Dynamic discovery of Tools, Resources, and Prompts
-- [x] **Context & Interaction** - Access logging, progress reporting, and client sampling via `Context` object
-- [x] **Stdio Transport** - Support for standard input/output transport (essential for Claude Desktop)
+- [x] **Context & Interaction** - Access logging, progress reporting, and client sampling via `Context`### 💾 Storage Abstraction
+
+FastMCP provides a built-in state management system.
+
+```csharp
+[McpTool("remember_me")]
+public async Task<string> RememberMe(string name, McpContext context)
+{
+    await context.Storage.SetAsync("last_user", name);
+    return $"I will remember you, {name}!";
+}
+```
+
+-   **Interfaces**: `IMcpStorage` for custom persistence (Redis, File, etc).
+-   **Default**: `InMemoryMcpStorage` (development only).
+-   **Injection**: `builder.AddMcpStorage<MyStorage>()`.
+** - Support for standard input/output transport (essential for Claude Desktop)
 - [x] **SSE Transport** - Dedicated Server-Sent Events transport
 - [x] **Client Library** - Native .NET client SDK for building MCP clients
 
@@ -874,8 +912,8 @@ For bug reports and feature requests, please use [GitHub Issues](https://github.
 
 ### UI & Metadata
 - [x] **Icons** - Support for tool and server icons
-- [ ] **Binary Content** - Helpers for handling Image and Audio content types
-- [ ] **Multi-factor authentication (MFA)** - For OAuth providers
+- [x] **Binary Content** - Helpers for handling Image and Audio content types
+- [x] **Multi-factor authentication (MFA)** - For OAuth providers
 
 ---
 
