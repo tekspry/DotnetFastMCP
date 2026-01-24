@@ -880,42 +880,7 @@ For bug reports and feature requests, please use [GitHub Issues](https://github.
 - ✅ JSON-RPC 2.0 compliance
 - ✅ ASP.NET Core integration
 
-## 🎯 Roadmap
 
-### Core Functionality
-- [x] **Protocol Discovery** - Dynamic discovery of Tools, Resources, and Prompts
-- [x] **Context & Interaction** - Access logging, progress reporting, and client sampling via `Context`### 💾 Storage Abstraction
-
-FastMCP provides a built-in state management system.
-
-```csharp
-[McpTool("remember_me")]
-public async Task<string> RememberMe(string name, McpContext context)
-{
-    await context.Storage.SetAsync("last_user", name);
-    return $"I will remember you, {name}!";
-}
-```
-
--   **Interfaces**: `IMcpStorage` for custom persistence (Redis, File, etc).
--   **Default**: `InMemoryMcpStorage` (development only).
--   **Injection**: `builder.AddMcpStorage<MyStorage>()`.
-** - Support for standard input/output transport (essential for Claude Desktop)
-- [x] **SSE Transport** - Dedicated Server-Sent Events transport
-- [x] **Client Library** - Native .NET client SDK for building MCP clients
-
-### Advanced Features
-- [x] **Middleware Interception** - Hooks for inspecting/modifying JSON-RPC messages
-- [x] **Server Composition** - Ability to mount or import other MCP servers
-- [x] **Storage Abstractions** - Interfaces for state persistence
-- [x] **Background Tasks** - Patterns for long-running operations
-
-### UI & Metadata
-- [x] **Icons** - Support for tool and server icons
-- [x] **Binary Content** - Helpers for handling Image and Audio content types
-- [x] **Multi-factor authentication (MFA)** - For OAuth providers
-
----
 
 **Made with ❤️ by the DotnetFastMCP team**
 
