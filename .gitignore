@@ -139,3 +139,5 @@ README_RESOLUTION.md
 SESSION_SUMMARY.md
 START_HERE.md
 RUN_SERVER_EXTERNAL.ps1
+examples/LLMIntegrationExample/build.log
+examples/LLMIntegrationExample/msbuild.log
