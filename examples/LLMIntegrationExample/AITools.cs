@@ -9,10 +9,14 @@ namespace LLMIntegrationExample;
 /// </summary>
 public class AITools
 {
-    private readonly ILLMProvider _llm;
-    private readonly ILogger<AITools> _logger;
+    // Static fields to hold service instances
+    private static ILLMProvider? _llm;
+    private static ILogger<AITools>? _logger;
 
-    public AITools(ILLMProvider llm, ILogger<AITools> logger)
+    /// <summary>
+    /// Initialize static services (called from Program.cs)
+    /// </summary>
+    public static void Initialize(ILLMProvider llm, ILogger<AITools> logger)
     {
         _llm = llm;
         _logger = logger;
@@ -24,14 +28,14 @@ public class AITools
     /// <param name="prompt">The story prompt or theme</param>
     /// <param name="maxTokens">Maximum tokens for the story (default: 500)</param>
     /// <returns>A creative story</returns>
-    [McpTool("generate_story", "Generates a creative story using AI")]
-    public async Task<string> GenerateStory(string prompt, int maxTokens = 500)
+    [McpTool("generate_story")]
+    public static async Task<string> GenerateStory(string prompt, int maxTokens = 500)
     {
-        _logger.LogInformation("Generating story for prompt: {Prompt}", prompt);
+        _logger!.LogInformation("Generating story for prompt: {Prompt}", prompt);
 
         var systemPrompt = "You are a creative storyteller. Write engaging, imaginative stories.";
         
-        var result = await _llm.GenerateAsync(prompt, new LLMGenerationOptions
+        var result = await _llm!.GenerateAsync(prompt, new LLMGenerationOptions
         {
             SystemPrompt = systemPrompt,
             Temperature = 0.8f,
@@ -47,14 +51,14 @@ public class AITools
     /// <param name="text">The text to summarize</param>
     /// <param name="sentenceCount">Number of sentences in summary (default: 3)</param>
     /// <returns>A concise summary</returns>
-    [McpTool("summarize_text", "Summarizes long text using AI")]
-    public async Task<string> SummarizeText(string text, int sentenceCount = 3)
+    [McpTool("summarize_text")]
+    public static async Task<string> SummarizeText(string text, int sentenceCount = 3)
     {
-        _logger.LogInformation("Summarizing text (length: {Length} chars)", text.Length);
+        _logger!.LogInformation("Summarizing text (length: {Length} chars)", text.Length);
 
         var prompt = $"Summarize the following text in exactly {sentenceCount} sentences:\n\n{text}";
         
-        var result = await _llm.GenerateAsync(prompt, new LLMGenerationOptions
+        var result = await _llm!.GenerateAsync(prompt, new LLMGenerationOptions
         {
             Temperature = 0.3f, // Lower temperature for more focused summaries
             MaxTokens = 200
@@ -68,10 +72,10 @@ public class AITools
     /// </summary>
     /// <param name="text">The text to analyze</param>
     /// <returns>Sentiment analysis result with explanation</returns>
-    [McpTool("analyze_sentiment", "Analyzes sentiment of text using AI")]
-    public async Task<string> AnalyzeSentiment(string text)
+    [McpTool("analyze_sentiment")]
+    public static async Task<string> AnalyzeSentiment(string text)
     {
-        _logger.LogInformation("Analyzing sentiment for text");
+        _logger!.LogInformation("Analyzing sentiment for text");
 
         var prompt = $@"Analyze the sentiment of the following text. Provide:
 1. Overall sentiment (Positive/Negative/Neutral)
@@ -80,7 +84,7 @@ public class AITools
 
 Text: {text}";
         
-        var result = await _llm.GenerateAsync(prompt, new LLMGenerationOptions
+        var result = await _llm!.GenerateAsync(prompt, new LLMGenerationOptions
         {
             Temperature = 0.2f, // Very low temperature for analytical tasks
             MaxTokens = 150
@@ -95,14 +99,14 @@ Text: {text}";
     /// <param name="text">The text to translate</param>
     /// <param name="targetLanguage">Target language (e.g., "Spanish", "French", "Japanese")</param>
     /// <returns>Translated text</returns>
-    [McpTool("translate_text", "Translates text to another language using AI")]
-    public async Task<string> TranslateText(string text, string targetLanguage)
+    [McpTool("translate_text")]
+    public static async Task<string> TranslateText(string text, string targetLanguage)
     {
-        _logger.LogInformation("Translating to {Language}", targetLanguage);
+        _logger!.LogInformation("Translating to {Language}", targetLanguage);
 
         var prompt = $"Translate the following text to {targetLanguage}. Only provide the translation, no explanations:\n\n{text}";
         
-        var result = await _llm.GenerateAsync(prompt, new LLMGenerationOptions
+        var result = await _llm!.GenerateAsync(prompt, new LLMGenerationOptions
         {
             Temperature = 0.3f,
             MaxTokens = 500
@@ -117,10 +121,10 @@ Text: {text}";
     /// <param name="userMessage">User's message</param>
     /// <param name="systemPrompt">Optional system prompt to set AI behavior</param>
     /// <returns>AI's response</returns>
-    [McpTool("chat", "Chat with the AI assistant")]
-    public async Task<string> Chat(string userMessage, string? systemPrompt = null)
+    [McpTool("chat")]
+    public static async Task<string> Chat(string userMessage, string? systemPrompt = null)
     {
-        _logger.LogInformation("Processing chat message");
+        _logger!.LogInformation("Processing chat message");
 
         var messages = new List<LLMMessage>();
         
@@ -135,7 +139,7 @@ Text: {text}";
         
         messages.Add(LLMMessage.User(userMessage));
 
-        var result = await _llm.ChatAsync(messages, new LLMGenerationOptions
+        var result = await _llm!.ChatAsync(messages, new LLMGenerationOptions
         {
             Temperature = 0.7f,
             MaxTokens = 300
@@ -150,15 +154,15 @@ Text: {text}";
     /// <param name="description">Description of what the code should do</param>
     /// <param name="language">Programming language (e.g., "C#", "Python", "JavaScript")</param>
     /// <returns>Generated code with explanations</returns>
-    [McpTool("generate_code", "Generates code using AI")]
-    public async Task<string> GenerateCode(string description, string language)
+    [McpTool("generate_code")]
+    public static async Task<string> GenerateCode(string description, string language)
     {
-        _logger.LogInformation("Generating {Language} code", language);
+        _logger!.LogInformation("Generating {Language} code", language);
 
         var systemPrompt = $"You are an expert {language} programmer. Write clean, well-documented code with comments explaining key sections.";
         var prompt = $"Write {language} code for: {description}";
 
-        var result = await _llm.GenerateAsync(prompt, new LLMGenerationOptions
+        var result = await _llm!.GenerateAsync(prompt, new LLMGenerationOptions
         {
             SystemPrompt = systemPrompt,
             Temperature = 0.4f,

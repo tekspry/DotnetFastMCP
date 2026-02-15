@@ -36,10 +36,18 @@ public class OllamaProvider : ILLMProvider
         CancellationToken cancellationToken = default)
     {
         var model = options?.Model ?? _options.DefaultModel;
+        
+        // If SystemPrompt is provided, prepend it to the prompt
+        var fullPrompt = prompt;
+        if (!string.IsNullOrEmpty(options?.SystemPrompt))
+        {
+            fullPrompt = $"{options.SystemPrompt}\n\n{prompt}";
+        }
+        
         var requestBody = new
         {
             model,
-            prompt,
+            prompt = fullPrompt,
             stream = false,
             options = new
             {
@@ -69,10 +77,18 @@ public class OllamaProvider : ILLMProvider
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         var model = options?.Model ?? _options.DefaultModel;
+        
+        // If SystemPrompt is provided, prepend it to the prompt
+        var fullPrompt = prompt;
+        if (!string.IsNullOrEmpty(options?.SystemPrompt))
+        {
+            fullPrompt = $"{options.SystemPrompt}\n\n{prompt}";
+        }
+        
         var requestBody = new
         {
             model,
-            prompt,
+            prompt = fullPrompt,
             stream = true,
             options = new
             {
