@@ -1,0 +1,109 @@
+### Initialize MCP Session
+POST http://localhost:5000/mcp
+Content-Type: application/json
+
+{
+  "jsonrpc": "2.0",
+  "method": "initialize",
+  "params": {
+    "protocolVersion": "2024-11-05",
+    "capabilities": {},
+    "clientInfo": { "name": "test-client", "version": "1.0" }
+  },
+  "id": 1
+}
+
+### List Available Tools
+POST http://localhost:5000/mcp
+Content-Type: application/json
+
+{
+  "jsonrpc": "2.0",
+  "method": "tools/list",
+  "params": {},
+  "id": 2
+}
+
+### Test: Generate Story
+POST http://localhost:5000/mcp  
+Content-Type: application/json
+
+{
+  "jsonrpc": "2.0",
+  "method": "tools/call",
+  "params": {
+    "name": "generate_story",
+    "arguments": {
+      "prompt": "A curious cat discovers a hidden door in an old library",
+      "maxTokens": 200
+    }
+  },
+  "id": 3
+}
+
+### Test: Analyze Sentiment
+POST http://localhost:5000/mcp
+Content-Type: application/json
+
+{
+  "jsonrpc": "2.0",
+  "method": "tools/call",
+  "params": {
+    "name": "analyze_sentiment",
+    "arguments": {
+      "text": "I absolutely love this new framework! It makes development so much easier and more enjoyable."
+    }
+  },
+  "id": 4
+}
+
+### Test: Translate Text
+POST http://localhost:5000/mcp
+Content-Type: application/json
+
+{
+  "jsonrpc": "2.0",
+  "method": "tools/call",
+  "params": {
+    "name": "translate_text",
+    "arguments": {
+      "text": "Hello, how are you today?",
+      "targetLanguage": "Spanish"
+    }
+  },
+  "id": 5
+}
+
+### Test: Chat
+POST http://localhost:5000/mcp
+Content-Type: application/json
+
+{
+  "jsonrpc": "2.0",
+  "method": "tools/call",
+  "params": {
+    "name": "chat",
+    "arguments": {
+      "userMessage": "What are the benefits of microservices architecture?",
+      "systemPrompt": "You are a software architect. Give concise answers."
+    }
+  },
+  "id": 6
+}
+
+### Test: Generate Code
+POST http://localhost:5000/mcp
+Content-Type: application/json
+
+{
+  "jsonrpc": "2.0",
+  "method": "tools/call",
+  "params": {
+    "name": "generate_code",
+    "arguments": {
+      "description": "a function that checks if a string is a palindrome",
+      "language": "C#"
+    }
+  },
+  "id": 7
+}
