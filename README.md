@@ -32,11 +32,19 @@ DotnetFastMCP provides a clean, attribute-based approach to building MCP servers
 - ✅ **Claims-Based Access** - Access user information from authenticated requests
 - ✅ **MFA Support** - Enforce Multi-Factor Authentication for sensitive tools
 
-#### 🔌 Native Client Library (NEW!)
+#### 🔌 Native Client Library
 - ✅ **McpClient** - Type-safe .NET client for consuming any MCP server
 - ✅ **Transport Agnostic** - Support for both Stdio and SSE connections
 - ✅ **Notification Handling** - Events for real-time logs and progress
 - ✅ **Tool Invocation** - Clean `CallToolAsync<T>` API
+
+#### 🤖 LLM Integration (NEW!)
+- ✅ **8 LLM Providers** - Ollama, OpenAI, Azure OpenAI, Anthropic Claude, Google Gemini, Cohere, Hugging Face, Deepseek
+- ✅ **Latest Models (Feb 2026)** - Claude Opus 4.6, Gemini 3 Pro/Flash, Command A, DeepSeek V3.2
+- ✅ **Unified Interface** - Single `ILLMProvider` API for all providers
+- ✅ **Streaming Support** - Real-time token streaming with `IAsyncEnumerable<string>`
+- ✅ **Production-Ready** - HttpClientFactory, Polly retry policies, connection pooling
+- ✅ **Plug-and-Play** - Simple extension methods: `builder.AddAnthropicProvider()`
 
 ## 🚀 Quick Start
 
@@ -643,8 +651,7 @@ public static string TransferFunds()
 -   **MFA Check**: Verifies `amr` claim contains `mfa`.
 -   **Security**: Provides granular protection for critical operations.
 
-### Storage Abstraction
-s (NEW!)
+### Storage Abstraction (NEW!)
 
 FastMCP now includes a built-in state persistence layer. Tools can request `McpContext` to access `IMcpStorage`.
 
@@ -662,6 +669,85 @@ The default implementation is **In-Memory**, but you can swap it for Redis, SQL,
 ```csharp
 builder.AddMcpStorage<MyRedisStorage>();
 ```
+
+### LLM Integration (NEW!)
+
+FastMCP includes a powerful LLM integration system with **8 providers** supporting the latest models (Feb 2026).
+
+#### Quick Setup
+
+```csharp
+using FastMCP.AI;
+
+// Option 1: Local (Ollama)
+builder.AddOllamaProvider(options =>
+{
+    options.BaseUrl = "http://localhost:11434";
+    options.DefaultModel = "llama3.1:8b";
+});
+
+// Option 2: Cloud (Anthropic Claude Opus 4.6 - Latest)
+builder.AddAnthropicProvider(options =>
+{
+    options.ApiKey = Environment.GetEnvironmentVariable("ANTHROPIC_API_KEY")!;
+    options.DefaultModel = "claude-opus-4.6"; // 1M context, Feb 2026
+});
+
+// Option 3: Google Gemini 3
+builder.AddGeminiProvider(options =>
+{
+    options.ApiKey = Environment.GetEnvironmentVariable("GEMINI_API_KEY")!;
+    options.DefaultModel = "gemini-3-flash"; // Fast, cost-effective
+});
+```
+
+#### Use in Tools
+
+```csharp
+public class AITools
+{
+    private readonly ILLMProvider _llm;
+
+    public AITools(ILLMProvider llm) => _llm = llm;
+
+    [McpTool("generate_story")]
+    public async Task<string> GenerateStory(string topic)
+    {
+        return await _llm.GenerateAsync(
+            $"Write a story about {topic}",
+            new LLMGenerationOptions
+            {
+                SystemPrompt = "You are a creative storyteller.",
+                Temperature = 0.8,
+                MaxTokens = 500
+            });
+    }
+
+    [McpTool("stream_response")]
+    public async IAsyncEnumerable<string> StreamResponse(string prompt)
+    {
+        await foreach (var token in _llm.StreamAsync(prompt))
+        {
+            yield return token;
+        }
+    }
+}
+```
+
+#### Supported Providers (Feb 2026)
+
+| Provider | Extension Method | Latest Model | Best For |
+|----------|------------------|--------------|----------|
+| **Ollama** | `AddOllamaProvider()` | `llama3.1:8b` | Local, privacy, offline |
+| **OpenAI** | `AddOpenAIProvider()` | `gpt-4-turbo` | Production, function calling |
+| **Azure OpenAI** | `AddAzureOpenAIProvider()` | `gpt-4` | Enterprise, compliance |
+| **Anthropic** | `AddAnthropicProvider()` | `claude-opus-4.6` | Deep reasoning, 1M context |
+| **Google Gemini** | `AddGeminiProvider()` | `gemini-3-flash` | Multimodal, high-volume |
+| **Cohere** | `AddCohereProvider()` | `command-a` | Enterprise RAG, agents |
+| **Hugging Face** | `AddHuggingFaceProvider()` | Any model | Open-source, flexibility |
+| **Deepseek** | `AddDeepseekProvider()` | `deepseek-v3.2` | Cost-effective, reasoning |
+
+**See [LLM Integration Guide](../Documentation/llm-integration-guide.md) for complete documentation.**
 
 ### Background Tasks (NEW!)
 
@@ -796,6 +882,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - [OpenID Connect Core 1.0](https://openid.net/specs/openid-connect-core-1_0.html)
 
 ### Framework Documentation
+- [LLM Integration Guide](../Documentation/llm-integration-guide.md) 🆕
 - [Protocol Discovery Guide](Documentation/protocol-discovery-guide.md)
 - [Client Library Guide](Documentation/client-library-guide.md)
 - [Context & Interaction Guide](Documentation/context-interaction-guide.md)
@@ -818,7 +905,16 @@ For bug reports and feature requests, please use [GitHub Issues](https://github.
 
 ## ✨ What's New
 
-### v1.12.0 - MFA Support (Latest)
+### v1.13.0 - LLM Integration (Latest - Feb 2026)
+- 🤖 **8 LLM Providers** - Ollama, OpenAI, Azure OpenAI, Anthropic Claude, Google Gemini, Cohere, Hugging Face, Deepseek
+- ✨ **Latest Models** - Claude Opus 4.6 (1M context), Gemini 3 Pro/Flash, Command A, DeepSeek V3.2
+- 🔌 **Unified Interface** - Single `ILLMProvider` API for all providers
+- 📡 **Streaming Support** - Real-time token streaming with `IAsyncEnumerable<string>`
+- 🏗️ **Production-Ready** - HttpClientFactory, Polly retry policies, connection pooling
+- 🎯 **Plug-and-Play** - Simple registration: `builder.AddAnthropicProvider()`
+- 📚 **Comprehensive Docs** - Complete integration guide with examples
+
+### v1.12.0 - MFA Support
 - 🛡️ **MFA Enforcement** - Require `mfa` AMR claim for sensitive tools
 - ✅ **Granular Control** - Enable per-tool using `[AuthorizeMcpTool(RequireMfa=true)]`
 - 🔒 **Enhanced Security** - Standards-based multi-factor authentication check
