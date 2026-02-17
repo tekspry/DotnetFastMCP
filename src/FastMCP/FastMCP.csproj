@@ -5,13 +5,13 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <PackageId>DotnetFastMCP</PackageId>
-    <Version>1.12.0</Version> 
+    <Version>1.13.0</Version> 
     <Authors>TekSpry</Authors>
     <Company>TekSpry</Company>    
-    <Description>A .NET framework for building Model Context Protocol (MCP) servers quickly and easily.</Description>
+    <Description>A production-ready .NET framework for building Model Context Protocol (MCP) servers with 8 LLM providers (OpenAI, Anthropic Claude Opus 4.6, Google Gemini 3, Cohere, Hugging Face, Deepseek, Ollama, Azure OpenAI), enterprise OAuth authentication (6 providers), native .NET client SDK, and streaming support.</Description>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <RepositoryUrl>https://github.com/tekspry/DotnetFastMCP</RepositoryUrl>       
-    <PackageTags>mcp;ai;dotnet;framework</PackageTags>
+    <PackageTags>mcp;ai;dotnet;framework;llm;openai;anthropic;claude;gemini;oauth;streaming</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
 
