@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Core FastMCP framework -->
+    <ProjectReference Include="..\..\src\FastMCP\FastMCP.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!--
+      These are the CONSUMER-SIDE OTel packages.
+      FastMCP.csproj only has the base OpenTelemetry package.
+      Consumers choose their own exporters.
+      
+      For Prometheus export:        OpenTelemetry.Exporter.Prometheus.AspNetCore
+      For Console (dev debugging):  OpenTelemetry.Exporter.Console
+      For Application Insights:     Azure.Monitor.OpenTelemetry.AspNetCore
+      
+      This demo uses the Console exporter only (zero external dependencies).
+    -->
+    <PackageReference Include="OpenTelemetry.Extensions.Hosting" Version="1.9.0" />
+    <PackageReference Include="OpenTelemetry.Exporter.Console" Version="1.9.0" />
+  </ItemGroup>
+
+</Project>
