@@ -33,7 +33,7 @@ using OpenTelemetry.Metrics;
 using System.Reflection;
 
 // ─── 1. Create the FastMCP server ───────────────────────────
-var server = new FastMCPServer("TelemetryDemo", version: "1.0.0");
+var server = new FastMCPServer("TelemetryDemo");
 var builder = McpServerBuilder.Create(server, args);
 
 // ─── 2. Register tools from this assembly ───────────────────
@@ -51,7 +51,7 @@ builder.WithTelemetry(telemetry =>
 
 // ─── 4. Configure OpenTelemetry exporters (consumer's choice) 
 //        This is the STANDARD OTel pattern — FastMCP plugs into it.
-builder.GetWebAppBuilder().Services.AddOpenTelemetry()
+builder.Services.AddOpenTelemetry()
     .ConfigureResource(resource => resource
         .AddService(
             serviceName: "telemetry-demo-server",
@@ -142,7 +142,7 @@ public static class TelemetryDemoTools
 // ─── MCP Resource — to exercise mcp.resource.reads ──────────
 public static class TelemetryDemoResources
 {
-    [McpResource(Uri = "telemetry://status", Description = "Returns current server status")]
+    [McpResource("telemetry://status", Description = "Returns current server status")]
     public static string GetStatus()
     {
         return $"TelemetryDemo server is running. UTC: {DateTime.UtcNow:O}";
@@ -152,7 +152,7 @@ public static class TelemetryDemoResources
 // ─── MCP Prompt — to exercise mcp.prompt.requests ───────────
 public static class TelemetryDemoPrompts
 {
-    [McpPrompt(Name = "analyze-metrics", Description = "Prompt to ask an AI to analyze the metrics")]
+    [McpPrompt("analyze-metrics", Description = "Prompt to ask an AI to analyze the metrics")]
     public static string AnalyzeMetrics(string focus = "errors")
     {
         return $"You are an SRE. Analyze the following FastMCP server telemetry, paying special attention to {focus}. " +

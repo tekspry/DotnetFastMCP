@@ -27,7 +27,15 @@ public class McpServerBuilder
 {
     private readonly WebApplicationBuilder _webAppBuilder;
     private readonly FastMCPServer _mcpServer;
-    public FastMCPServer Server => _mcpServer; 
+    public FastMCPServer Server => _mcpServer;
+    
+    /// <summary>
+    /// Exposes the underlying service collection so consumers can register
+    /// additional services (e.g. OpenTelemetry exporters, custom DI registrations).
+    /// Follows the same convention as WebApplicationBuilder.Services.
+    /// </summary>
+    public IServiceCollection Services => _webAppBuilder.Services; 
+
     private string? _defaultChallengeScheme;
 
     private McpServerBuilder(FastMCPServer mcpServer, string[]? args)
