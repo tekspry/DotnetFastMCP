@@ -5,10 +5,10 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <PackageId>DotnetFastMCP</PackageId>
-    <Version>1.12.0</Version> 
+    <Version>1.14.0</Version>
     <Authors>TekSpry</Authors>
-    <Company>TekSpry</Company>    
-    <Description>A .NET framework for building Model Context Protocol (MCP) servers quickly and easily.</Description>
+    <Company>TekSpry</Company>
+    <Description>A .NET framework for building Model Context Protocol (MCP) servers quickly and easily. Includes authentication (6 OAuth providers), LLM integration (8 providers), OpenTelemetry observability, middleware pipeline, background tasks, storage abstraction, and more.</Description>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <RepositoryUrl>https://github.com/tekspry/DotnetFastMCP</RepositoryUrl>       
     <PackageTags>mcp;ai;dotnet;framework</PackageTags>
@@ -32,6 +32,7 @@
     <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.0.0" />
     <PackageReference Include="Microsoft.IdentityModel.Protocols.OpenIdConnect" Version="8.0.0" />  
     <PackageReference Include="Microsoft.Extensions.Http.Polly" Version="8.0.0" />
+    <PackageReference Include="OpenTelemetry" Version="1.9.0" />
   </ItemGroup>
 
 </Project>

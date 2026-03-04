@@ -1,0 +1,162 @@
+### TelemetryDemo — Manual Test Requests
+### Use with VS Code REST Client extension (ms-vscode.rest-client)
+### or copy the curl commands from the comments below.
+###
+### These requests exercise ALL telemetry metrics:
+###   mcp.tool.invocations  ← calls to tools/call
+###   mcp.tool.duration     ← measured for every tool/call
+###   mcp.tool.errors       ← AlwaysFails tool
+###   mcp.prompt.requests   ← prompts/get
+###   mcp.resource.reads    ← resources/read
+
+@host = http://localhost:5000
+
+# ─── Step 0: Initialize the MCP session ───────────────────────
+# ALWAYS run this first. MCP requires an initialize handshake.
+POST {{host}}/mcp
+Content-Type: application/json
+
+{
+  "jsonrpc": "2.0",
+  "id": 0,
+  "method": "initialize",
+  "params": {
+    "protocolVersion": "2024-11-05",
+    "clientInfo": { "name": "rest-client-test", "version": "1.0" }
+  }
+}
+
+###
+
+# ─── Step 1: List all registered tools ────────────────────────
+POST {{host}}/mcp
+Content-Type: application/json
+
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "tools/list",
+  "params": {}
+}
+
+###
+
+# ─── Step 2: METRIC: mcp.tool.invocations + mcp.tool.duration ─
+# Calls the fast 'Greet' tool. Run multiple times to see counter grow.
+POST {{host}}/mcp
+Content-Type: application/json
+
+{
+  "jsonrpc": "2.0",
+  "id": 2,
+  "method": "tools/call",
+  "params": {
+    "name": "Greet",
+    "arguments": { "name": "World" }
+  }
+}
+
+###
+
+# ─── Step 3: METRIC: mcp.tool.duration (large value) ──────────
+# Calls the slow tool — generates a 1000ms+ duration data point.
+# Watch dotnet-counters: mcp.tool.duration histogram should spike.
+POST {{host}}/mcp
+Content-Type: application/json
+
+{
+  "jsonrpc": "2.0",
+  "id": 3,
+  "method": "tools/call",
+  "params": {
+    "name": "SlowOperation",
+    "arguments": { "delayMs": 1000 }
+  }
+}
+
+###
+
+# ─── Step 4: METRIC: mcp.tool.errors ─────────────────────────
+# This tool always throws. The response will be a JSON-RPC error.
+# Watch dotnet-counters: mcp.tool.errors counter should increment.
+POST {{host}}/mcp
+Content-Type: application/json
+
+{
+  "jsonrpc": "2.0",
+  "id": 4,
+  "method": "tools/call",
+  "params": {
+    "name": "AlwaysFails",
+    "arguments": { "reason": "testing-error-metrics" }
+  }
+}
+
+###
+
+# ─── Step 5: METRIC: mcp.prompt.requests ─────────────────────
+# Gets a prompt — increments the mcp.prompt.requests counter.
+POST {{host}}/mcp
+Content-Type: application/json
+
+{
+  "jsonrpc": "2.0",
+  "id": 5,
+  "method": "prompts/get",
+  "params": {
+    "name": "analyze-metrics",
+    "arguments": { "focus": "errors" }
+  }
+}
+
+###
+
+# ─── Step 6: METRIC: mcp.resource.reads ─────────────────────
+# Reads the status resource — increments mcp.resource.reads.
+POST {{host}}/mcp
+Content-Type: application/json
+
+{
+  "jsonrpc": "2.0",
+  "id": 6,
+  "method": "resources/read",
+  "params": {
+    "uri": "telemetry://status"
+  }
+}
+
+###
+
+# ─── Step 7: Repeat Greet 5 times to see counter accumulate ───
+POST {{host}}/mcp
+Content-Type: application/json
+
+{"jsonrpc":"2.0","id":7,"method":"tools/call","params":{"name":"Greet","arguments":{"name":"Alice"}}}
+
+###
+
+POST {{host}}/mcp
+Content-Type: application/json
+
+{"jsonrpc":"2.0","id":8,"method":"tools/call","params":{"name":"Greet","arguments":{"name":"Bob"}}}
+
+###
+
+POST {{host}}/mcp
+Content-Type: application/json
+
+{"jsonrpc":"2.0","id":9,"method":"tools/call","params":{"name":"Greet","arguments":{"name":"Charlie"}}}
+
+###
+
+POST {{host}}/mcp
+Content-Type: application/json
+
+{"jsonrpc":"2.0","id":10,"method":"tools/call","params":{"name":"RandomDelay","arguments":{}}  }
+
+###
+
+POST {{host}}/mcp
+Content-Type: application/json
+
+{"jsonrpc":"2.0","id":11,"method":"tools/call","params":{"name":"RandomDelay","arguments":{}}  }

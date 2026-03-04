@@ -1,10 +1,11 @@
 # DotnetFastMCP - Enterprise-Grade Model Context Protocol Server Framework
 
 [![.NET 8.0](https://img.shields.io/badge/.NET-8.0-blue)](https://dotnet.microsoft.com)
+[![NuGet](https://img.shields.io/badge/NuGet-v1.14.0-orange)](https://www.nuget.org/packages/DotnetFastMCP)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![GitHub](https://img.shields.io/badge/GitHub-tekspry-black)](https://github.com/tekspry/.NetFastMCP)
 
-**A modern, production-ready C#/.NET framework for building secure, scalable Model Context Protocol (MCP) servers with enterprise-grade authentication.**
+**A modern, production-ready C#/.NET framework for building secure, scalable, and observable Model Context Protocol (MCP) servers with enterprise-grade authentication.**
 
 ## 🎯 Overview
 
@@ -38,13 +39,22 @@ DotnetFastMCP provides a clean, attribute-based approach to building MCP servers
 - ✅ **Notification Handling** - Events for real-time logs and progress
 - ✅ **Tool Invocation** - Clean `CallToolAsync<T>` API
 
-#### 🤖 LLM Integration (NEW!)
+#### 🤖 LLM Integration
 - ✅ **8 LLM Providers** - Ollama, OpenAI, Azure OpenAI, Anthropic Claude, Google Gemini, Cohere, Hugging Face, Deepseek
 - ✅ **Latest Models (Feb 2026)** - Claude Opus 4.6, Gemini 3 Pro/Flash, Command A, DeepSeek V3.2
 - ✅ **Unified Interface** - Single `ILLMProvider` API for all providers
 - ✅ **Streaming Support** - Real-time token streaming with `IAsyncEnumerable<string>`
 - ✅ **Production-Ready** - HttpClientFactory, Polly retry policies, connection pooling
 - ✅ **Plug-and-Play** - Simple extension methods: `builder.AddAnthropicProvider()`
+
+#### 📡 Observability (NEW! v1.14.0)
+- ✅ **OpenTelemetry Integration** - First-class metrics and distributed tracing
+- ✅ **5 Auto-Tracked Metrics** - Tool invocations, duration, errors, prompt requests, resource reads
+- ✅ **One-Line Setup** - `builder.WithTelemetry()` — zero boilerplate
+- ✅ **Exporter Agnostic** - Plug in Prometheus, Application Insights, Grafana, Jaeger, or any OTLP backend
+- ✅ **OTel Semantic Conventions** - Standard tag names, exception events, span status
+- ✅ **Zero Overhead When Disabled** - Fully opt-in, no performance cost if unused
+- ✅ **Stdio + HTTP** - Metrics work across both transports
 
 ## 🚀 Quick Start
 
@@ -583,6 +593,7 @@ See [`mcp-authentication-guide.md`](mcp-authentication-guide.md) for:
 | Example | Description | Port |
 |---------|-------------|------|
 | [BasicServer](examples/BasicServer) | Simple MCP server without authentication | 5000 |
+| [TelemetryDemo](examples/TelemetryDemo) | 📡 OpenTelemetry metrics & tracing demo | 5000 |
 | [AzureAdOAuth](examples/Auth/AzureAdOAuth) | Azure AD authentication example | 5002 |
 | [GoogleOAuth](examples/Auth/GoogleOAuth) | Google OAuth example | 5000 |
 | [GitHubOAuth](examples/Auth/GitHubOAuth) | GitHub OAuth example | 5001 |
@@ -593,7 +604,58 @@ See [`mcp-authentication-guide.md`](mcp-authentication-guide.md) for:
 
 ## 🏗️ Advanced Features
 
-### Middleware Interception (NEW!)
+### 📡 Observability — OpenTelemetry (NEW! v1.14.0)
+
+FastMCP ships with built-in OpenTelemetry instrumentation. Enable with one line and connect to any backend.
+
+```csharp
+using FastMCP.Telemetry;
+using OpenTelemetry.Metrics;
+using OpenTelemetry.Trace;
+
+// 1. Enable FastMCP telemetry (one line)
+builder.WithTelemetry(t =>
+{
+    t.ServiceName    = "my-mcp-server";
+    t.EnableMetrics  = true;
+    t.EnableTracing  = true;
+});
+
+// 2. Configure your exporter of choice
+builder.Services.AddOpenTelemetry()
+    .WithMetrics(m =>
+    {
+        m.AddMcpInstrumentation();  // FastMCP extension method
+        m.AddPrometheusExporter();  // or AddConsoleExporter(), AddOtlpExporter()
+    })
+    .WithTracing(t =>
+    {
+        t.AddMcpInstrumentation();  // FastMCP extension method
+        t.AddOtlpExporter();        // or AddJaeger(), AddZipkin()
+    });
+```
+
+**Metrics automatically tracked:**
+
+| Metric | Type | Tag | Description |
+|--------|------|-----|-------------|
+| `mcp.tool.invocations` | Counter | `tool.name` | Total tool calls |
+| `mcp.tool.duration` | Histogram (ms) | `tool.name` | Tool execution time |
+| `mcp.tool.errors` | Counter | `tool.name` | Failed tool calls |
+| `mcp.prompt.requests` | Counter | — | Prompt template requests |
+| `mcp.resource.reads` | Counter | — | Resource read requests |
+
+**Validate with dotnet-counters (no exporter needed):**
+
+```powershell
+dotnet-counters monitor -n YourAppName --counters FastMCP
+```
+
+**See [Observability Guide](../Documentation/observability-guide.md) for full documentation**, including production exporter setup, distributed tracing details, and real request/response validation examples.
+
+---
+
+### Middleware Interception
 
 Middleware allows you to intercept and modify JSON-RPC messages (requests and responses) flowing through the server pipeline. This is useful for logging, validation, modification, or custom monitoring.
 
@@ -882,10 +944,12 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - [OpenID Connect Core 1.0](https://openid.net/specs/openid-connect-core-1_0.html)
 
 ### Framework Documentation
-- [LLM Integration Guide](../Documentation/llm-integration-guide.md) 🆕
+- [Observability Guide](../Documentation/observability-guide.md) 🆕 **v1.14.0**
+- [LLM Integration Guide](../Documentation/llm-integration-guide.md)
 - [Protocol Discovery Guide](Documentation/protocol-discovery-guide.md)
 - [Client Library Guide](Documentation/client-library-guide.md)
 - [Context & Interaction Guide](Documentation/context-interaction-guide.md)
+- [Middleware Interception Guide](Documentation/middleware-interception-guide.md)
 - [SSE Transport Guide](Documentation/sse-transport-guide.md)
 - [Stdio Transport Guide](Documentation/stdio-transport-guide.md)
 - [ASP.NET Core Documentation](https://docs.microsoft.com/en-us/aspnet/core/)
@@ -905,7 +969,17 @@ For bug reports and feature requests, please use [GitHub Issues](https://github.
 
 ## ✨ What's New
 
-### v1.13.0 - LLM Integration (Latest - Feb 2026)
+### v1.14.0 - OpenTelemetry Observability (Latest - Mar 2026)
+- 📡 **OpenTelemetry Integration** - First-class metrics and distributed tracing built in
+- 📊 **5 Auto-Tracked Metrics** - Tool invocations, duration, errors, prompt requests, resource reads
+- ✨ **One-Line Setup** - `builder.WithTelemetry()` with zero boilerplate
+- 🔌 **Exporter Agnostic** - Works with Prometheus, App Insights, Grafana, Jaeger, any OTLP backend
+- 🔍 **Distributed Tracing** - Full span support with OTel semantic convention tags
+- 🛡️ **PII Safe Defaults** - Tool inputs never logged unless explicitly enabled
+- 🎯 **Zero Overhead** - Fully opt-in, no cost when not used
+- 📚 **Comprehensive Docs** - Full guide with validation examples and production checklist
+
+### v1.13.0 - LLM Integration (Feb 2026)
 - 🤖 **8 LLM Providers** - Ollama, OpenAI, Azure OpenAI, Anthropic Claude, Google Gemini, Cohere, Hugging Face, Deepseek
 - ✨ **Latest Models** - Claude Opus 4.6 (1M context), Gemini 3 Pro/Flash, Command A, DeepSeek V3.2
 - 🔌 **Unified Interface** - Single `ILLMProvider` API for all providers
