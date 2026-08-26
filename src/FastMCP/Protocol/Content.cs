@@ -13,6 +13,7 @@ public abstract class ContentItem
 }
 public class TextContent : ContentItem
 {
+    [JsonIgnore]
     public override string Type => "text";
     
     [JsonPropertyName("text")]
@@ -20,6 +21,7 @@ public class TextContent : ContentItem
 }
 public class ImageContent : ContentItem
 {
+    [JsonIgnore]
     public override string Type => "image";
     
     [JsonPropertyName("data")]
@@ -30,6 +32,7 @@ public class ImageContent : ContentItem
 }
 public class EmbeddedResource : ContentItem
 {
+    [JsonIgnore]
     public override string Type => "resource";
     
     [JsonPropertyName("resource")]

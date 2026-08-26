@@ -17,6 +17,7 @@ public class McpRequestHandler
     private readonly IAuthorizationService _authorizationService;
     private readonly IMcpStorage _storage;
     private readonly IBackgroundTaskQueue? _backgroundQueue;
+    private readonly IServiceProvider _serviceProvider;
     private static readonly JsonSerializerOptions _jsonOptions = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
     private readonly McpMiddlewareDelegate _pipeline;
     
@@ -26,7 +27,7 @@ public class McpRequestHandler
         _authorizationService = authorizationService;
 
         _storage = storage;
-        
+        _serviceProvider = serviceProvider;
         _backgroundQueue = serviceProvider.GetService(typeof(IBackgroundTaskQueue)) as IBackgroundTaskQueue;
          
         // Build the pipeline: The last step is executing the actual handler logic
@@ -187,6 +188,11 @@ public class McpRequestHandler
         if (server.Tools.TryGetValue(request.Method, out var foundMethod))
         {
             toolMethod = foundMethod;
+            // Resolve an instance of the declaring class from DI if the method is not static
+            if (!toolMethod.IsStatic && toolMethod.DeclaringType != null)
+            {
+                instance = _serviceProvider.GetService(toolMethod.DeclaringType);
+            }
         }
         if (toolMethod is null && server.DynamicTools.TryGetValue(request.Method, out var dynamicToolHandler))
         {
