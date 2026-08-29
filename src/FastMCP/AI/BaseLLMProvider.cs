@@ -139,8 +139,8 @@ public abstract class BaseLLMProvider : ILLMProvider
         await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
         using var reader = new System.IO.StreamReader(stream);
 
-        while (!reader.EndOfStream && !cancellationToken.IsCancellationRequested)
-        {            var line = await reader.ReadLineAsync();
+        while (!cancellationToken.IsCancellationRequested && await reader.ReadLineAsync() is { } line)
+        {
             if (string.IsNullOrWhiteSpace(line)) continue;
 
             // Skip SSE comment lines

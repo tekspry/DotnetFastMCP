@@ -1,7 +1,8 @@
 # DotnetFastMCP - Enterprise-Grade Model Context Protocol Server Framework
 
-[![.NET 8.0](https://img.shields.io/badge/.NET-8.0-blue)](https://dotnet.microsoft.com)
-[![NuGet](https://img.shields.io/badge/NuGet-v1.15.0-orange)](https://www.nuget.org/packages/DotnetFastMCP)
+[![.NET 8.0](https://img.shields.io/badge/.NET-8.0%20LTS-blue)](https://dotnet.microsoft.com)
+[![.NET 10.0](https://img.shields.io/badge/.NET-10.0%20LTS-purple)](https://dotnet.microsoft.com)
+[![NuGet](https://img.shields.io/badge/NuGet-v2.0.0-orange)](https://www.nuget.org/packages/DotnetFastMCP)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![GitHub](https://img.shields.io/badge/GitHub-tekspry-black)](https://github.com/tekspry/.NetFastMCP)
 
@@ -12,6 +13,12 @@
 DotnetFastMCP provides a clean, attribute-based approach to building MCP servers that implement the JSON-RPC 2.0 protocol. It includes a **native .NET Client Library** client for consuming MCP servers, making it a complete solution for building both sides of the Model Context Protocol. Built on ASP.NET Core, it leverages modern .NET features for high performance, reliability, and **comprehensive OAuth 2.0 / OpenID Connect authentication** out of the box.
 
 ### ⭐ Key Features
+
+#### 🚀 .NET 10 LTS & .NET 8 LTS Dual Support (NEW! v2.0.0)
+- ✅ **Dual-Targeting** - Ships both `net8.0` and `net10.0` binaries in a single package
+- ✅ **Zero Breaking Changes** - 100% backward compatible for existing .NET 8 applications
+- ✅ **Modern Non-Blocking Async Streams** - High-performance SSE parsing compliant with .NET 10 CA2024 rules
+- ✅ **Comprehensive Test Matrix** - Dual-targeted unit & in-memory integration tests covering positive & negative scenarios
 
 #### Core Framework
 - ✅ **Simple Attribute-Based API** - Declare tools and resources with `[McpTool]` and `[McpResource]` attributes
@@ -47,7 +54,7 @@ DotnetFastMCP provides a clean, attribute-based approach to building MCP servers
 - ✅ **Production-Ready** - HttpClientFactory, Polly retry policies, connection pooling
 - ✅ **Plug-and-Play** - Simple extension methods: `builder.AddAnthropicProvider()`
 
-#### 📡 Observability (v1.14.0)
+#### 📡 Observability
 - ✅ **OpenTelemetry Integration** - First-class metrics and distributed tracing
 - ✅ **5 Auto-Tracked Metrics** - Tool invocations, duration, errors, prompt requests, resource reads
 - ✅ **One-Line Setup** - `builder.WithTelemetry()` — zero boilerplate
@@ -56,7 +63,7 @@ DotnetFastMCP provides a clean, attribute-based approach to building MCP servers
 - ✅ **Zero Overhead When Disabled** - Fully opt-in, no performance cost if unused
 - ✅ **Stdio + HTTP** - Metrics work across both transports
 
-#### 🏥 Health Checks & Diagnostics (NEW! v1.15.0)
+#### 🏥 Health Checks & Diagnostics
 - ✅ **Built-In Health Endpoint** - `GET /mcp/health` exposed automatically
 - ✅ **One-Line Setup** - `builder.WithHealthChecks()` — no configuration required
 - ✅ **Plug-In Custom Checks** - Add any check as a simple lambda (no interfaces needed)
@@ -70,6 +77,12 @@ DotnetFastMCP provides a clean, attribute-based approach to building MCP servers
 
 ### Installation
 
+Install via NuGet Package Manager:
+```bash
+dotnet add package DotnetFastMCP --version 2.0.0
+```
+
+Or clone the repository:
 ```bash
 git clone https://github.com/tekspry/.NetFastMCP.git
 cd DotnetFastMCP

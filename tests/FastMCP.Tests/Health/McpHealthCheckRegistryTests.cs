@@ -1,4 +1,3 @@
-// File: tests/FastMCP.Tests/Health/McpHealthCheckRegistryTests.cs
 using FastMCP.Health;
 using FastMCP.Server;
 using Microsoft.Extensions.Logging.Abstractions;

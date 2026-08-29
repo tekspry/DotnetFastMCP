@@ -14,7 +14,7 @@ public class LoggingMiddleware : IMcpMiddleware
     public async Task<JsonRpcResponse> InvokeAsync(McpMiddlewareContext context, McpMiddlewareDelegate next, CancellationToken ct)
     {
         _requestCount++;
-        Console.Error.WriteLine($"[🔍 MIDDLEWARE] #{_requestCount} Incoming: {method} (ID: {id})");
+        Console.Error.WriteLine($"[🔍 MIDDLEWARE] #{_requestCount} Incoming: {context.Request?.Method} (ID: {context.Request?.Id})");
 
         // Example: Inspect/Modify context or request here if needed
 

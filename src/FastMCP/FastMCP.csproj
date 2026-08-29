@@ -1,11 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <PackageId>DotnetFastMCP</PackageId>
-    <Version>1.15.0</Version>
+    <Version>2.0.0</Version>
     <Authors>TekSpry</Authors>
     <Company>TekSpry</Company>
     <Description>A .NET framework for building Model Context Protocol (MCP) servers quickly and easily. Includes authentication (6 OAuth providers), LLM integration (8 providers), OpenTelemetry observability, health checks &amp; diagnostics, middleware pipeline, background tasks, storage abstraction, and more.</Description>

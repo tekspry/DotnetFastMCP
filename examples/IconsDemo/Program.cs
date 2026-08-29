@@ -40,7 +40,7 @@ public static class IconTools
             Description = "A prompt with an icon",
             Messages = new List<PromptMessage>
             {
-                new PromptMessage { Role = "user", Content = new { type = "text", text = "Hello" } }
+                new PromptMessage { Role = "user", Content = new TextContent { Text = "Hello" } }
             }
         };
     }
