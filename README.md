@@ -132,6 +132,37 @@ dotnet run
 
 The server will start on `http://localhost:5000`.
 
+## 🏆 Built With DotnetFastMCP
+
+Real-world enterprise projects that demonstrate DotnetFastMCP in production:
+
+### 👗 Fashion Accessory AI Marketing Pipeline
+[![GitHub](https://img.shields.io/badge/GitHub-tekspry%2Ffashion--pipeline-black)](https://github.com/tekspry/fashion-pipeline)
+[![.NET 10.0](https://img.shields.io/badge/.NET-10.0%20LTS-blue)](https://dotnet.microsoft.com)
+[![Google A2A](https://img.shields.io/badge/Protocol-Google%20A2A-green)](https://a2a-protocol.org)
+
+An enterprise-grade, distributed multimodal AI pipeline on **.NET 10 LTS** that automates the transformation of raw fashion accessory photographs into commercial marketing visuals and video content.
+
+**Architecture highlights:**
+- 🏗️ **Two-Dimensional AI Architecture** — DotnetFastMCP (vertical MCP tool layer) + Google A2A Protocol (horizontal agent communication)
+- 🤖 **5 DotnetFastMCP Servers** — `VisionMcpServer`, `PromptMcpServer`, `ImageMcpServer`, `InpaintingMcpServer`, `VideoMcpServer`
+- 🎨 **Multimodal AI** — Gemini 3.1 Flash Image for dual-conditioning image synthesis, Kling AI for video generation
+- 🛡️ **Multi-Tenant SaaS** — Entity Framework Core global query filters with tenant isolation
+- ⏱️ **Async Background Jobs** — Hangfire with exponential backoff and rate-limit protection
+
+```
+OrchestratorAgent (A2A)
+    ├── VisionAgent → VisionMcpServer  :5100  (extract_accessory_features)
+    ├── CreativeAgent → PromptMcpServer :5200  (generate_image_prompts)
+    ├── ImageAgent → ImageMcpServer    :5300  (generate_accessory_image)
+    ├── InpaintingAgent → InpaintingMcpServer :5500  (inpaint_accessory)
+    └── VideoAgent → VideoMcpServer    :5400  (generate_accessory_video)
+```
+
+> 🔗 [View Repository →](https://github.com/tekspry/fashion-pipeline)
+
+---
+
 ## 📚 Architecture
 
 ### Core Components
