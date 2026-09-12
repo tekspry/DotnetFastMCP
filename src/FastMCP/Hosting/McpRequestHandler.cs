@@ -597,16 +597,37 @@ public class McpRequestHandler
         var schema = new InputSchema();
         foreach (var param in method.GetParameters())
         {
-            if (param.ParameterType == typeof(ClaimsPrincipal)) continue; // Skip injected dependencies
+            // Skip all framework-injected parameter types — these are resolved internally
+            // and must never appear in the tools/list schema visible to AI models.
+            if (IsFrameworkInjectedParameter(param.ParameterType)) continue;
+
             string typeName = param.ParameterType == typeof(int) || param.ParameterType == typeof(long) ? "integer" :
                               param.ParameterType == typeof(bool) ? "boolean" : "string";
-            schema.Properties[param.Name ?? "arg"] = new { type = typeName };
+
+            // Read [McpDescription] if present — gives AI models semantic context for the parameter
+            var descAttr = param.GetCustomAttribute<Attributes.McpDescriptionAttribute>();
+            var description = descAttr?.Description ?? string.Empty;
+
+            schema.Properties[param.Name ?? "arg"] = new { type = typeName, description };
+
             if (!param.HasDefaultValue)
             {
                 schema.Required.Add(param.Name ?? "arg");
             }
         }
         return schema;
+    }
+
+    /// <summary>
+    /// Returns true for parameter types that are injected by the FastMCP framework at
+    /// invocation time and should never be surfaced in the JSON Schema shown to AI models.
+    /// </summary>
+    private static bool IsFrameworkInjectedParameter(Type type)
+    {
+        return type == typeof(System.Security.Claims.ClaimsPrincipal)
+            || type == typeof(McpContext)
+            || type == typeof(System.Threading.CancellationToken)
+            || type == typeof(Protocol.IMcpSession);
     }
 
     private JsonRpcResponse HandleInitialize(FastMCPServer server, JsonRpcRequest request)
