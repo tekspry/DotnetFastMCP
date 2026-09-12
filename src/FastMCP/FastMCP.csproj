@@ -5,10 +5,10 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <PackageId>DotnetFastMCP</PackageId>
-    <Version>2.1.0</Version>
+    <Version>2.1.1</Version>
     <Authors>TekSpry</Authors>
     <Company>TekSpry</Company>
-    <Description>A .NET framework for building Model Context Protocol (MCP) servers quickly and easily. v2.1: Automatic DI registration for tool classes and [McpDescription] parameter attributes. Includes authentication (6 OAuth providers), LLM integration (8 providers), OpenTelemetry observability, health checks &amp; diagnostics, middleware pipeline, background tasks, storage abstraction, and more.</Description>
+    <Description>A .NET framework for building Model Context Protocol (MCP) servers quickly and easily. v2.1.1: Fix McpClient.CallToolAsync deserialization for primitives, strings, and POCOs. v2.1: Automatic DI registration and [McpDescription] attributes.</Description>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <RepositoryUrl>https://github.com/tekspry/DotnetFastMCP</RepositoryUrl>       
     <PackageTags>mcp;ai;dotnet;framework</PackageTags>

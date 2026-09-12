@@ -11,10 +11,18 @@ using Xunit;
 
 namespace FastMCP.IntegrationTests.Sse;
 
+public record TestPerson(string Name, int Age);
+
 public static class SseTestTools
 {
     [McpTool("multiply", Description = "Multiplies two numbers")]
     public static int Multiply(int a, int b) => a * b;
+
+    [McpTool("sse_echo", Description = "Echoes a message")]
+    public static string Echo(string message) => $"Echo: {message}";
+
+    [McpTool("sse_get_person", Description = "Returns a person model")]
+    public static TestPerson GetPerson(string name, int age) => new(name, age);
 }
 
 public class McpServerSseIntegrationTests : IAsyncLifetime
@@ -58,5 +66,25 @@ public class McpServerSseIntegrationTests : IAsyncLifetime
         var tools = await client.ListToolsAsync();
         Assert.NotNull(tools);
         Assert.Contains(tools.Tools, t => t.Name == "multiply");
+
+        // 1. Primitive int tool call
+        var product = await client.CallToolAsync<int>("multiply", new { a = 6, b = 7 });
+        Assert.Equal(42, product);
+
+        // 2. String tool call
+        var greeting = await client.CallToolAsync<string>("sse_echo", new { message = "Hello" });
+        Assert.Equal("Echo: Hello", greeting);
+
+        // 3. POCO complex model tool call
+        var person = await client.CallToolAsync<TestPerson>("sse_get_person", new { name = "Bob", age = 30 });
+        Assert.NotNull(person);
+        Assert.Equal("Bob", person.Name);
+        Assert.Equal(30, person.Age);
+
+        // 4. Raw CallToolResult envelope call
+        var rawResult = await client.CallToolAsync("multiply", new { a = 2, b = 3 });
+        Assert.NotNull(rawResult);
+        Assert.False(rawResult.IsError);
+        Assert.Equal("6", ((FastMCP.Protocol.TextContent)rawResult.Content[0]).Text);
     }
 }

@@ -1,6 +1,9 @@
 using FastMCP.Client.Transports;
 using FastMCP.Protocol;
 using System.Collections.Concurrent;
+using System.ComponentModel;
+using System.Globalization;
+using System.Linq;
 using System.Text.Json;
 
 namespace FastMCP.Client;
@@ -36,9 +39,82 @@ public class McpClient : IAsyncDisposable
         return await SendRequestAsync<ListResourcesResult>("resources/list", null, cancellationToken);
     }
 
+    /// <summary>
+    /// Calls a tool and returns the raw MCP CallToolResult envelope.
+    /// </summary>
+    public async Task<CallToolResult> CallToolAsync(string toolName, object arguments, CancellationToken cancellationToken = default)
+    {
+        return await SendRequestAsync<CallToolResult>("tools/call", new { name = toolName, arguments }, cancellationToken);
+    }
+
+    /// <summary>
+    /// Calls a tool and automatically unwraps and deserializes the result content to TResult.
+    /// Supports primitives (int, bool, double, etc.), string, and complex POCO types.
+    /// </summary>
     public async Task<TResult> CallToolAsync<TResult>(string toolName, object arguments, CancellationToken cancellationToken = default)
     {
-        return await SendRequestAsync<TResult>("tools/call", new { name = toolName, arguments }, cancellationToken);
+        var toolResult = await SendRequestAsync<CallToolResult>("tools/call", new { name = toolName, arguments }, cancellationToken);
+
+        if (typeof(TResult) == typeof(CallToolResult))
+        {
+            return (TResult)(object)toolResult;
+        }
+
+        if (toolResult.IsError)
+        {
+            var errorDetails = string.Join("\n", toolResult.Content?.OfType<TextContent>().Select(c => c.Text) ?? Array.Empty<string>());
+            throw new InvalidOperationException($"Tool '{toolName}' execution failed: {errorDetails}");
+        }
+
+        if (toolResult.Content == null || toolResult.Content.Count == 0)
+        {
+            return default!;
+        }
+
+        if (typeof(TResult) == typeof(ContentItem))
+        {
+            return (TResult)(object)toolResult.Content[0];
+        }
+
+        if (typeof(TResult) == typeof(List<ContentItem>) || typeof(TResult) == typeof(IEnumerable<ContentItem>))
+        {
+            return (TResult)(object)toolResult.Content;
+        }
+
+        var textItem = toolResult.Content.OfType<TextContent>().FirstOrDefault();
+        if (textItem == null)
+        {
+            return default!;
+        }
+
+        string rawText = textItem.Text;
+
+        if (typeof(TResult) == typeof(string))
+        {
+            return (TResult)(object)rawText;
+        }
+
+        var jsonOptions = new JsonSerializerOptions
+        {
+            PropertyNameCaseInsensitive = true,
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+        };
+
+        try
+        {
+            return JsonSerializer.Deserialize<TResult>(rawText, jsonOptions)!;
+        }
+        catch (JsonException)
+        {
+            var targetType = Nullable.GetUnderlyingType(typeof(TResult)) ?? typeof(TResult);
+            var converter = TypeDescriptor.GetConverter(targetType);
+            if (converter != null && converter.CanConvertFrom(typeof(string)))
+            {
+                return (TResult)converter.ConvertFromInvariantString(rawText)!;
+            }
+
+            return (TResult)Convert.ChangeType(rawText, targetType, CultureInfo.InvariantCulture);
+        }
     }
 
     private async Task<T> SendRequestAsync<T>(string method, object? parameters, CancellationToken cancellationToken)

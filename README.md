@@ -2,7 +2,7 @@
 
 [![.NET 8.0](https://img.shields.io/badge/.NET-8.0%20LTS-blue)](https://dotnet.microsoft.com)
 [![.NET 10.0](https://img.shields.io/badge/.NET-10.0%20LTS-purple)](https://dotnet.microsoft.com)
-[![NuGet](https://img.shields.io/badge/NuGet-v2.1.0-orange)](https://www.nuget.org/packages/DotnetFastMCP)
+[![NuGet](https://img.shields.io/badge/NuGet-v2.1.1-orange)](https://www.nuget.org/packages/DotnetFastMCP)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![GitHub](https://img.shields.io/badge/GitHub-tekspry-black)](https://github.com/tekspry/.NetFastMCP)
 
@@ -85,7 +85,7 @@ DotnetFastMCP provides a clean, attribute-based approach to building MCP servers
 
 Install via NuGet Package Manager:
 ```bash
-dotnet add package DotnetFastMCP --version 2.1.0
+dotnet add package DotnetFastMCP --version 2.1.1
 ```
 
 Or clone the repository:
@@ -1209,7 +1209,13 @@ For bug reports and feature requests, please use [GitHub Issues](https://github.
 
 ## ✨ What's New
 
-### v2.1.0 - Zero-Boilerplate MCP Servers (Latest - Sep 2026)
+### v2.1.1 - Client Deserialization Patch (Latest - Sep 2026)
+- 🐛 **Fix `McpClient.CallToolAsync<TResult>` Deserialization** - Resolved deserialization error where calling tools returning primitive types (`int`, `bool`, `double`, etc.), `string`, or custom POCO models threw JSON conversion errors (fixes #37).
+- 📦 **Automatic Envelope Unwrapping** - Correctly unwraps and deserializes the inner payload from `CallToolResult.Content` while maintaining full MCP specification compliance.
+- ⚡ **Direct Envelope Overload** - Added non-generic `client.CallToolAsync("toolName", args)` returning raw `CallToolResult` directly.
+- 🧪 **Comprehensive Test Coverage** - Added unit and integration test suites validating primitive, string, and complex model deserialization.
+
+### v2.1.0 - Zero-Boilerplate MCP Servers (Sep 2026)
 - ⚡ **Automatic DI Registration** - Non-static classes containing `[McpTool]`, `[McpResource]`, or `[McpPrompt]` are automatically registered as `Transient` during `WithComponentsFrom()`. No manual `builder.Services.AddTransient<T>()` boilerplate required.
 - 🛡️ **Lifespan Safety** - Implemented via `TryAddTransient` so custom `Singleton` or `Scoped` registrations configured in `builder.Services` are never overwritten.
 - 📝 **`[McpDescription]` Parameter Attribute** - Tool parameters annotated with `[McpDescription]` have their documentation automatically rendered into JSON Schema `properties.<param>.description` in `tools/list`.
