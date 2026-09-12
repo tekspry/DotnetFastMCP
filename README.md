@@ -2,7 +2,7 @@
 
 [![.NET 8.0](https://img.shields.io/badge/.NET-8.0%20LTS-blue)](https://dotnet.microsoft.com)
 [![.NET 10.0](https://img.shields.io/badge/.NET-10.0%20LTS-purple)](https://dotnet.microsoft.com)
-[![NuGet](https://img.shields.io/badge/NuGet-v2.0.0-orange)](https://www.nuget.org/packages/DotnetFastMCP)
+[![NuGet](https://img.shields.io/badge/NuGet-v2.1.0-orange)](https://www.nuget.org/packages/DotnetFastMCP)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![GitHub](https://img.shields.io/badge/GitHub-tekspry-black)](https://github.com/tekspry/.NetFastMCP)
 
@@ -14,7 +14,13 @@ DotnetFastMCP provides a clean, attribute-based approach to building MCP servers
 
 ### ⭐ Key Features
 
-#### 🚀 .NET 10 LTS & .NET 8 LTS Dual Support (NEW! v2.0.0)
+#### ⚡ Zero-Boilerplate MCP Servers (NEW! v2.1.0)
+- ✅ **Automatic DI Registration** - Non-static tool, resource, and prompt classes scanned via `WithComponentsFrom()` are automatically registered as `Transient` services in the DI container. Zero manual `builder.Services.AddTransient<T>()` boilerplate.
+- ✅ **Preserves Custom Lifetimes** - Built on `TryAddTransient` semantics to honor custom Singleton or Scoped registrations without collision.
+- ✅ **`[McpDescription]` Parameter Attributes** - Annotate method parameters with rich descriptions emitted directly into JSON Schema `inputSchema` (`tools/list`), significantly enhancing LLM tool-calling accuracy.
+- ✅ **Smart Schema Filtering** - Automatically hides framework-injected types (`McpContext`, `CancellationToken`, `ClaimsPrincipal`, `IMcpSession`) from schema exposure so LLMs only see valid user inputs.
+
+#### 🚀 .NET 10 LTS & .NET 8 LTS Dual Support (v2.0.0)
 - ✅ **Dual-Targeting** - Ships both `net8.0` and `net10.0` binaries in a single package
 - ✅ **Zero Breaking Changes** - 100% backward compatible for existing .NET 8 applications
 - ✅ **Modern Non-Blocking Async Streams** - High-performance SSE parsing compliant with .NET 10 CA2024 rules
@@ -79,7 +85,7 @@ DotnetFastMCP provides a clean, attribute-based approach to building MCP servers
 
 Install via NuGet Package Manager:
 ```bash
-dotnet add package DotnetFastMCP --version 2.0.0
+dotnet add package DotnetFastMCP --version 2.1.0
 ```
 
 Or clone the repository:
@@ -93,18 +99,38 @@ dotnet build -c Release
 
 #### 1. Define Your Tools
 
-Create a static class with `[McpTool]`-decorated static methods:
+Tools can be written as instance classes with constructor dependency injection (auto-registered!) or static methods:
 
 ```csharp
 using FastMCP.Attributes;
+using Microsoft.Extensions.Logging;
 
-public static class MyTools
+// Instance-based tool with constructor injection (automatically registered into DI via WithComponentsFrom!)
+public class CalculatorTools
 {
-    [McpTool(Description = "Adds two numbers")]
-    public static int Add(int a, int b) => a + b;
+    private readonly ILogger<CalculatorTools> _logger;
 
-    [McpTool(Description = "Returns an echo of the input")]
-    public static string Echo(string message) => message;
+    public CalculatorTools(ILogger<CalculatorTools> logger)
+    {
+        _logger = logger;
+    }
+
+    [McpTool(Description = "Performs mathematical addition")]
+    public int Add(
+        [McpDescription("The first number to add")] int a,
+        [McpDescription("The second number to add")] int b)
+    {
+        _logger.LogInformation("Adding {A} + {B}", a, b);
+        return a + b;
+    }
+}
+
+// Static tools are also supported out of the box
+public static class EchoTools
+{
+    [McpTool(Description = "Returns an echo of the input message")]
+    public static string Echo(
+        [McpDescription("Text message to echo back")] string message) => message;
 }
 ```
 
@@ -662,6 +688,21 @@ Test files include:
 
 ## 📖 Documentation
 
+### Guides & Features
+
+- [Automatic DI Registration & Parameter Descriptions Guide](docs/auto-di-registration-guide.md) (NEW! v2.1.0)
+- [Health Checks & Diagnostics Guide](docs/health-checks-guide.md)
+- [Observability & OpenTelemetry Guide](docs/observability-guide.md)
+- [LLM Integration Guide](docs/llm-integration-guide.md)
+- [MFA Support Guide](docs/mfa-support-guide.md)
+- [Prompts Feature Guide](docs/prompts-feature-guide.md)
+- [Client Library Guide](docs/client-library-guide.md)
+- [Storage Abstraction Guide](docs/storage-abstraction-guide.md)
+- [Server Composition Guide](docs/server-composition-guide.md)
+- [Middleware Interception Guide](docs/middleware-interception-guide.md)
+- [SSE Transport Guide](docs/sse-transport-guide.md)
+- [Stdio Transport Guide](docs/stdio-transport-guide.md)
+
 ### Complete Authentication Guide
 
 See [MFA Support Guide](docs/mfa-support-guide.md) for enforcing Multi-Factor Authentication on sensitive tools, and the individual provider README files under `examples/Auth/` for detailed OAuth setup instructions.
@@ -670,7 +711,7 @@ See [MFA Support Guide](docs/mfa-support-guide.md) for enforcing Multi-Factor Au
 
 | Example | Description | Port |
 |---------|-------------|------|
-| [BasicServer](examples/BasicServer) | Simple MCP server without authentication | 5000 |
+| [BasicServer](examples/BasicServer) | Simple MCP server with Auto-DI & [McpDescription] | 5000 |
 | [HealthChecksDemo](examples/HealthChecksDemo) | 🏥 Health monitoring & diagnostics demo | 5000 |
 | [TelemetryDemo](examples/TelemetryDemo) | 📡 OpenTelemetry metrics & tracing demo | 5000 |
 | [AzureAdOAuth](examples/Auth/AzureAdOAuth) | Azure AD authentication example | 5002 |
@@ -683,7 +724,53 @@ See [MFA Support Guide](docs/mfa-support-guide.md) for enforcing Multi-Factor Au
 
 ## 🏗️ Advanced Features
 
-### 🏥 Health Checks & Diagnostics (NEW! v1.15.0)
+### ⚡ Automatic DI Registration & [McpDescription] (NEW! v2.1.0)
+
+DotnetFastMCP 2.1 makes authoring production MCP servers completely zero-boilerplate by pairing automatic Dependency Injection with LLM-grade parameter schemas:
+
+1. **Zero-Config DI**: Non-static tool, resource, and prompt classes scanned with `WithComponentsFrom()` are automatically registered as `Transient` into ASP.NET Core DI. No more manual `builder.Services.AddTransient<OrderTools>()` lines.
+2. **Preserves Custom Lifetimes**: Built on `TryAddTransient` semantics, so any class explicitly registered as `Singleton` or `Scoped` in `builder.Services` retains its desired lifetime.
+3. **`[McpDescription]` for Parameters**: Annotate tool parameters with descriptions that are exposed directly in the JSON Schema `inputSchema` (`tools/list`), giving LLMs exact semantic context and eliminating hallucinated arguments.
+4. **Framework Parameter Exclusion**: Types such as `McpContext`, `CancellationToken`, `ClaimsPrincipal`, and `IMcpSession` are automatically filtered out from the public schema.
+
+```csharp
+public class OrderTools
+{
+    private readonly IOrderRepository _repository;
+    private readonly ILogger<OrderTools> _logger;
+
+    // Injected automatically via ASP.NET Core DI
+    public OrderTools(IOrderRepository repository, ILogger<OrderTools> logger)
+    {
+        _repository = repository;
+        _logger = logger;
+    }
+
+    [McpTool(Description = "Retrieves order status by order identifier and country")]
+    public async Task<string> GetOrderStatus(
+        [McpDescription("Unique order ID, e.g. ORD-98765")] string orderId,
+        [McpDescription("Two-letter country code, e.g. US, UK")] string countryCode = "US",
+        CancellationToken ct = default) // Framework types are automatically excluded from the tool schema
+    {
+        _logger.LogInformation("Fetching order {OrderId} in {Country}", orderId, countryCode);
+        return await _repository.GetStatusAsync(orderId, countryCode, ct);
+    }
+}
+```
+
+```csharp
+// Program.cs - Zero boilerplate registration!
+var server = new FastMCPServer("OrderServer");
+var builder = McpServerBuilder.Create(server, args);
+
+// Automatically registers OrderTools as Transient, discovers [McpTool], and configures schemas!
+builder.WithComponentsFrom(Assembly.GetExecutingAssembly());
+
+var app = builder.Build();
+await app.RunMcpAsync(args);
+```
+
+### 🏥 Health Checks & Diagnostics (v1.15.0)
 
 FastMCP ships with a built-in production health check endpoint. Enable with one line and plug in any custom check as a simple lambda.
 
@@ -1122,7 +1209,21 @@ For bug reports and feature requests, please use [GitHub Issues](https://github.
 
 ## ✨ What's New
 
-### v1.15.0 - Health Checks & Diagnostics (Latest - Apr 2026)
+### v2.1.0 - Zero-Boilerplate MCP Servers (Latest - Sep 2026)
+- ⚡ **Automatic DI Registration** - Non-static classes containing `[McpTool]`, `[McpResource]`, or `[McpPrompt]` are automatically registered as `Transient` during `WithComponentsFrom()`. No manual `builder.Services.AddTransient<T>()` boilerplate required.
+- 🛡️ **Lifespan Safety** - Implemented via `TryAddTransient` so custom `Singleton` or `Scoped` registrations configured in `builder.Services` are never overwritten.
+- 📝 **`[McpDescription]` Parameter Attribute** - Tool parameters annotated with `[McpDescription]` have their documentation automatically rendered into JSON Schema `properties.<param>.description` in `tools/list`.
+- 🧼 **Clean Schema Generation** - Framework types (`McpContext`, `CancellationToken`, `ClaimsPrincipal`, `IMcpSession`) are automatically excluded from `tools/list` schema definitions, preventing LLM argument errors.
+- 🧪 **57 Tests Passing** - Dual-targeted unit and integration test suite passing across both .NET 8 LTS and .NET 10 LTS.
+- 📖 **Comprehensive Guide** - Detailed documentation in `docs/auto-di-registration-guide.md`.
+
+### v2.0.0 - .NET 10 LTS & .NET 8 LTS Dual Support (Aug 2026)
+- 🚀 **Dual-Targeting** - Ships both `net8.0` and `net10.0` binaries in a single package.
+- 🔒 **Zero Breaking Changes** - 100% backward compatible for existing .NET 8 applications.
+- ⚡ **High-Performance Non-Blocking Async Streams** - SSE parser compliant with .NET 10 CA2024 rules.
+- 🧪 **Comprehensive Test Matrix** - Unit & in-memory integration tests running across both target frameworks.
+
+### v1.15.0 - Health Checks & Diagnostics (Apr 2026)
 - 🏥 **Built-In Health Endpoint** - `GET /mcp/health` exposed with a single `builder.WithHealthChecks()` call
 - 🔌 **Lambda-Based Custom Checks** - Add any check (`database`, `llm`, `memory`, external API) as a simple lambda with no interface to implement
 - ⚡ **Parallel Execution** - All checks run concurrently; a slow check never delays a fast one
