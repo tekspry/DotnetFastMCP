@@ -155,9 +155,18 @@ public class McpServerBuilder
     }
 
     /// <summary>
-    /// Scans the specified assembly for methods decorated with McpTool and McpResource 
-    /// attributes and registers them with the server.
+    /// Scans the specified assembly for methods decorated with <see cref="McpToolAttribute"/>,
+    /// <see cref="McpResourceAttribute"/>, and <see cref="McpPromptAttribute"/> and registers
+    /// them with the server.
+    /// <para>
+    /// <b>Automatic DI Registration:</b> For every non-static tool, resource, or prompt method
+    /// found, the declaring class is automatically registered in the DI container as
+    /// <c>Transient</c> (using <c>TryAddTransient</c>, so explicit registrations are never
+    /// overridden). This means you no longer need to manually call
+    /// <c>builder.Services.AddTransient&lt;MyTool&gt;()</c> — constructor injection just works.
+    /// </para>
     /// </summary>
+    /// <param name="assembly">The assembly to scan for MCP components.</param>
     public McpServerBuilder WithComponentsFrom(Assembly assembly)
     {
         var methods = assembly.GetTypes().SelectMany(t => t.GetMethods());
@@ -170,6 +179,7 @@ public class McpServerBuilder
             {
                 var name = toolAttr.Name ?? method.Name;
                 _mcpServer.Tools.TryAdd(name, method);
+                TryRegisterDeclaringType(method);
             }
 
             var resAttr = method.GetCustomAttribute<McpResourceAttribute>();
@@ -178,6 +188,7 @@ public class McpServerBuilder
             {
                 var name = resAttr.Uri?.Split('/').Last() ?? method.Name;
                 _mcpServer.Resources.TryAdd(name, method);
+                TryRegisterDeclaringType(method);
             }
 
             var promptAttr = method.GetCustomAttribute<McpPromptAttribute>();
@@ -186,10 +197,34 @@ public class McpServerBuilder
             {
                 var name = promptAttr.Name ?? method.Name;
                 _mcpServer.Prompts.TryAdd(name, method);
+                TryRegisterDeclaringType(method);
             }
         }
 
         return this;
+    }
+
+    /// <summary>
+    /// Registers the declaring type of an MCP component method into DI as Transient,
+    /// if the method is non-static and the type is a concrete, user-defined class.
+    /// Uses <c>TryAddTransient</c> so that explicit registrations (e.g. via
+    /// <c>AddHttpClient&lt;T&gt;</c> or <c>AddScoped&lt;T&gt;</c>) are never overridden.
+    /// </summary>
+    private void TryRegisterDeclaringType(System.Reflection.MethodInfo method)
+    {
+        // Only instance methods need DI — static methods have no instance to resolve
+        if (method.IsStatic) return;
+
+        var type = method.DeclaringType;
+        if (type is null) return;
+
+        // Skip abstract classes, interfaces, and compiler-generated types
+        // (e.g. the "<Program>$" class emitted for top-level statements)
+        if (type.IsAbstract || type.IsInterface) return;
+        if (type.IsDefined(typeof(System.Runtime.CompilerServices.CompilerGeneratedAttribute), inherit: false)) return;
+
+        // TryAdd ensures we never override an explicit registration the developer made
+        _webAppBuilder.Services.TryAddTransient(type);
     }
 
     public McpServerBuilder AddServer(FastMCPServer other, string? prefix = null)
