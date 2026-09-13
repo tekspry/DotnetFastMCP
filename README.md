@@ -1,4 +1,4 @@
-# DotnetFastMCP - Enterprise-Grade Model Context Protocol Server Framework
+# DotnetFastMCP — Enterprise Security & Governance Gateway for MCP Servers
 
 [![.NET 8.0](https://img.shields.io/badge/.NET-8.0%20LTS-blue)](https://dotnet.microsoft.com)
 [![.NET 10.0](https://img.shields.io/badge/.NET-10.0%20LTS-purple)](https://dotnet.microsoft.com)
@@ -6,11 +6,11 @@
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![GitHub](https://img.shields.io/badge/GitHub-tekspry-black)](https://github.com/tekspry/.NetFastMCP)
 
-**A modern, production-ready C#/.NET framework for building secure, scalable, and observable Model Context Protocol (MCP) servers with enterprise-grade authentication.**
+**Enterprise security, governance, and observability layer for Model Context Protocol (MCP) servers in .NET — OAuth 2.0/OIDC authentication, per-tool MFA enforcement, OpenTelemetry instrumentation, and zero-config health checks. Built on ASP.NET Core.**
 
 ## 🎯 Overview
 
-DotnetFastMCP provides a clean, attribute-based approach to building MCP servers that implement the JSON-RPC 2.0 protocol. It includes a **native .NET Client Library** client for consuming MCP servers, making it a complete solution for building both sides of the Model Context Protocol. Built on ASP.NET Core, it leverages modern .NET features for high performance, reliability, and **comprehensive OAuth 2.0 / OpenID Connect authentication** out of the box.
+DotnetFastMCP adds enterprise-grade security, governance, and observability to your MCP servers. While the core protocol is simple, running MCP tools in production requires OAuth 2.0/OIDC authentication, per-tool MFA enforcement, distributed tracing, and health monitoring — none of which the base protocol provides. DotnetFastMCP handles all of this with a clean attribute-based API on ASP.NET Core, plus a **native .NET client library** for consuming MCP servers.
 
 ### ⭐ Key Features
 

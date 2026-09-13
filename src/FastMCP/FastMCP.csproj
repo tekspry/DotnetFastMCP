@@ -8,10 +8,10 @@
     <Version>2.1.1</Version>
     <Authors>TekSpry</Authors>
     <Company>TekSpry</Company>
-    <Description>A .NET framework for building Model Context Protocol (MCP) servers quickly and easily. v2.1.1: Fix McpClient.CallToolAsync deserialization for primitives, strings, and POCOs. v2.1: Automatic DI registration and [McpDescription] attributes.</Description>
+    <Description>Enterprise security, governance, and observability gateway for MCP servers in .NET. OAuth 2.0/OIDC (Azure AD, Google, GitHub, Auth0, Okta, Cognito), per-tool MFA, OpenTelemetry metrics/tracing, health checks, and a native .NET client library. Built on ASP.NET Core for .NET 8 and .NET 10.</Description>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <RepositoryUrl>https://github.com/tekspry/DotnetFastMCP</RepositoryUrl>       
-    <PackageTags>mcp;ai;dotnet;framework</PackageTags>
+    <PackageTags>mcp;model-context-protocol;ai;dotnet;csharp;aspnetcore;oauth2;opentelemetry;llm;agents;enterprise;mfa;health-checks;json-rpc</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
 
