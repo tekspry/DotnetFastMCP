@@ -43,11 +43,12 @@ public class McpStdioTransport : IMcpSession
                 {
                     request = JsonSerializer.Deserialize<JsonRpcRequest>(line, _jsonOptions);
                 }
-                catch (JsonException)
+                catch (JsonException ex)
                 {
-                    // Invalid JSON: Send ParseError
-                    var error = JsonRpcResponse.FromError(JsonRpcError.ErrorCodes.ParseError, "Parse error", 0);
-                    await SendResponseAsync(error);
+                    // Invalid JSON: the request id cannot be recovered, and MCP clients reject
+                    // responses with id:null. Replying with a guessed id could be mis-correlated
+                    // with a real pending request, so log to stderr and skip the line instead.
+                    Console.Error.WriteLine($"[FastMCP] Ignoring unparseable stdio message: {ex.Message}");
                     continue;
                 }
                 if (request != null)

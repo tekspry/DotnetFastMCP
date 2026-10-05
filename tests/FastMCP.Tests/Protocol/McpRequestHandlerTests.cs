@@ -22,6 +22,7 @@ public class TestTools
         Content = new List<ContentItem> { new TextContent { Text = "explicit_result" } } 
     };
     public static object GetConfig() => new { Version = "1.0.0" };
+    public static object NullableResult() => new { Name = "x", Email = (string?)null };
 }
 
 public class ComplexInput
@@ -54,6 +55,7 @@ public class McpRequestHandlerTests
         _server.Tools["throw_err"] = typeof(TestTools).GetMethod(nameof(TestTools.ThrowingTool))!;
         _server.Tools["custom_res"] = typeof(TestTools).GetMethod(nameof(TestTools.CustomResultTool))!;
         _server.Resources["resource://config"] = typeof(TestTools).GetMethod(nameof(TestTools.GetConfig))!;
+        _server.Tools["nullable_res"] = typeof(TestTools).GetMethod(nameof(TestTools.NullableResult))!;
 
         _handler = new McpRequestHandler(mockAuthService.Object, new InMemoryMcpStorage(), sp);
     }
@@ -71,6 +73,24 @@ public class McpRequestHandlerTests
 
         var json = System.Text.Json.JsonSerializer.Serialize(response, McpJson.Options);
         Assert.Contains("\"result\":{}", json);
+    }
+
+    [Fact]
+    public async Task ToolResult_PreservesNullPropertiesInUserPayload()
+    {
+        var request = new JsonRpcRequest { JsonRpc = "2.0", Id = 10, Method = "nullable_res" };
+        var response = await _handler.HandleRequestAsync(request, _server, null);
+
+        var result = Assert.IsType<CallToolResult>(response.Result);
+        var text = Assert.IsType<TextContent>(result.Content[0]).Text;
+        Assert.Contains("\"email\":null", text);
+    }
+
+    [Fact]
+    public void McpJson_DoesNotGloballyOmitNulls()
+    {
+        var json = JsonSerializer.Serialize(new { a = (string?)null }, McpJson.Options);
+        Assert.Equal("{\"a\":null}", json);
     }
 
     [Fact]

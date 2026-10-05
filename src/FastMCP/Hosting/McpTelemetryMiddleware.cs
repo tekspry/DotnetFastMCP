@@ -81,7 +81,7 @@ public class McpTelemetryMiddleware : IMcpMiddleware
                 activity?.SetStatus(ActivityStatusCode.Ok);
             }
 
-            return response;
+            return response!;
         }
         catch (Exception ex)
         {
