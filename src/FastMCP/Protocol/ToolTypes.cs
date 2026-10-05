@@ -9,11 +9,18 @@ public class ListToolsResult
 
 public class Tool
 {
+    [JsonPropertyName("name")]
     public string Name { get; set; } = "";
-    public string Description { get; set; } = "";
+
+    [JsonPropertyName("description")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? Description { get; set; }
     
     [JsonPropertyName("icon")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? Icon { get; set; }
+
+    [JsonPropertyName("inputSchema")]
     public InputSchema InputSchema { get; set; } = new();
 }
 

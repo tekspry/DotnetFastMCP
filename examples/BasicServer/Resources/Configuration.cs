@@ -10,7 +10,7 @@ public static class Configuration
     /// <summary>
     /// Provides the application's static configuration.
     /// </summary>
-    [McpResource("resource://config")]
+    [McpResource("resource://config", Description = "Application configuration settings", MimeType = "application/json")]
     public static object GetConfig()
     {
         return new 

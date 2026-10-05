@@ -18,7 +18,7 @@ public class McpRequestHandler
     private readonly IMcpStorage _storage;
     private readonly IBackgroundTaskQueue? _backgroundQueue;
     private readonly IServiceProvider _serviceProvider;
-    private static readonly JsonSerializerOptions _jsonOptions = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+    private static readonly JsonSerializerOptions _jsonOptions = McpJson.Options;
     private readonly McpMiddlewareDelegate _pipeline;
     
     public McpRequestHandler(IAuthorizationService authorizationService, IMcpStorage storage, 
@@ -69,9 +69,9 @@ public class McpRequestHandler
                 case "initialize":
                     return HandleInitialize(server, request);
                 case "notifications/initialized":
-                    return new JsonRpcResponse { Id = request.Id, Result = null }; // Ack
+                    return new JsonRpcResponse { Id = null, Result = null };
                 case "ping":
-                    return new JsonRpcResponse { Id = request.Id, Result = "pong" };
+                    return new JsonRpcResponse { Id = request.Id, Result = new { } };
                 case "prompts/list":
                     return await HandlePromptsListAsync(server, request);
                 case "prompts/get":
@@ -80,11 +80,19 @@ public class McpRequestHandler
                     return HandleToolsList(server, request);
                 case "resources/list": 
                     return HandleResourcesList(server, request);
+                case "resources/templates/list":
+                    return new JsonRpcResponse { Id = request.Id, Result = new { resourceTemplates = Array.Empty<object>() } };
+                case "logging/setLevel":
+                    return new JsonRpcResponse { Id = request.Id, Result = new { } };
                 case "tools/call":
                     return await HandleToolsCallAsync(server, request, user, session, cancellationToken);
                 case "resources/read":
                     return await HandleResourcesReadAsync(server, request, user, session, cancellationToken);
                 default:
+                    if (request.Id == null || request.Method.StartsWith("notifications/") || request.Method.StartsWith("$/"))
+                    {
+                        return new JsonRpcResponse { Id = null, Result = null };
+                    }
                     return await HandleToolExecutionAsync(server, request, user, session, cancellationToken);
             }
         }
@@ -128,18 +136,23 @@ public class McpRequestHandler
     {
         var prompts = server.Prompts.Values.Select(m => {
             var attr = m.GetCustomAttribute<McpPromptAttribute>();
+            var description = string.IsNullOrWhiteSpace(attr?.Description) ? null : attr.Description;
+            var icon = string.IsNullOrWhiteSpace(attr?.Icon) ? null : attr.Icon;
             return new Prompt 
             {
                 Name = attr?.Name ?? m.Name,
-                Description = attr?.Description,
-                Icon = attr?.Icon,
+                Description = description,
+                Icon = icon,
                 Arguments = m.GetParameters()
-                    .Where(p => p.ParameterType != typeof(ClaimsPrincipal))
-                    .Select(p => new PromptArgument
-                    {
-                        Name = p.Name ?? "arg",
-                        Description = "",
-                        Required = !p.HasDefaultValue
+                    .Where(p => !IsFrameworkInjectedParameter(p.ParameterType))
+                    .Select(p => {
+                        var descAttr = p.GetCustomAttribute<Attributes.McpDescriptionAttribute>();
+                        return new PromptArgument
+                        {
+                            Name = p.Name ?? "arg",
+                            Description = descAttr?.Description ?? "",
+                            Required = !p.HasDefaultValue
+                        };
                     }).ToList()
             };
         }).ToList();
@@ -500,12 +513,14 @@ public class McpRequestHandler
             var name = kvp.Key;          // CORRECT: Use the Dictionary Key (prefixed name)
             var method = kvp.Value;      // CORRECT: Get MethodInfo from Value
             var attr = method.GetCustomAttribute<McpToolAttribute>();
+            var description = string.IsNullOrWhiteSpace(attr?.Description) ? null : attr.Description;
+            var icon = string.IsNullOrWhiteSpace(attr?.Icon) ? null : attr.Icon;
             
             return new Tool
             {
                 Name = name,
-                Description = attr?.Description ?? "",
-                Icon = attr?.Icon,
+                Description = description ?? "",
+                Icon = icon,
                 InputSchema = GenerateSchema(method)
             };
         }).ToList();
@@ -513,7 +528,6 @@ public class McpRequestHandler
         // Add Dynamic tools if any
         foreach (var dynamicTool in server.DynamicTools)
         {
-             // Simplified schema for dynamic tools - you may want to expand this if your dynamic tools support schema
              tools.Add(new Tool { Name = dynamicTool.Key, Description = "Dynamic Tool" });
         }
         return new JsonRpcResponse { Id = request.Id, Result = new ListToolsResult { Tools = tools } };
@@ -524,14 +538,17 @@ public class McpRequestHandler
             var name = kvp.Key;
             var method = kvp.Value;
             var attr = method.GetCustomAttribute<McpResourceAttribute>();
+            var description = string.IsNullOrWhiteSpace(attr?.Description) ? null : attr.Description;
+            var icon = string.IsNullOrWhiteSpace(attr?.Icon) ? null : attr.Icon;
+            var mimeType = string.IsNullOrWhiteSpace(attr?.MimeType) ? null : attr.MimeType;
             
             return new Resource
             {
                 Uri = attr?.Uri ?? "",
                 Name = name,
-                Description = attr?.Description,
-                Icon = attr?.Icon,
-                MimeType = attr?.MimeType
+                Description = description,
+                Icon = icon,
+                MimeType = mimeType
             };
         }).ToList();
         return new JsonRpcResponse { Id = request.Id, Result = new ListResourcesResult { Resources = resources } };
@@ -632,18 +649,23 @@ public class McpRequestHandler
 
     private JsonRpcResponse HandleInitialize(FastMCPServer server, JsonRpcRequest request)
     {
+        var serverInfo = new Dictionary<string, object>
+        {
+            ["name"] = server.Name,
+            ["version"] = server.Version
+        };
+        if (!string.IsNullOrEmpty(server.Icon))
+        {
+            serverInfo["icon"] = server.Icon;
+        }
+
         return new JsonRpcResponse
         {
             Id = request.Id,
             Result = new
             {
                 protocolVersion = "2024-11-05", // Spec version
-                serverInfo = new
-                {
-                    name = server.Name,
-                    version = server.Version,
-                    icon = server.Icon
-                },
+                serverInfo = serverInfo,
                 capabilities = new
                 {
                     tools = new { }, // We support tools

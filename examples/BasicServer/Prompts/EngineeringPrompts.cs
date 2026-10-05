@@ -13,8 +13,10 @@ public static class EngineeringPrompts
     /// </summary>
     /// <param name="code">The code snippet to analyze.</param>
     /// <param name="language">The programming language of the snippet.</param>
-    [McpPrompt("analyze_code")]
-    public static GetPromptResult Analyze(string code, string language = "csharp")
+    [McpPrompt("analyze_code", Description = "Analyzes a code snippet for potential improvements, bugs, or style issues.")]
+    public static GetPromptResult Analyze(
+        [McpDescription("The code snippet to analyze")] string code, 
+        [McpDescription("The programming language of the snippet (e.g. csharp, python)")] string language = "csharp")
     {
         return new GetPromptResult
         {
@@ -36,8 +38,10 @@ public static class EngineeringPrompts
     /// <summary>
     /// Generates a unit test for a given function description.
     /// </summary>
-    [McpPrompt("generate_test")]
-    public static GetPromptResult GenerateTest(string functionName, string requirements)
+    [McpPrompt("generate_test", Description = "Generates unit test code for a specified function and requirements.")]
+    public static GetPromptResult GenerateTest(
+        [McpDescription("The name of the function or method to test")] string functionName, 
+        [McpDescription("The functional requirements and test scenarios to cover")] string requirements)
     {
         return new GetPromptResult
         {

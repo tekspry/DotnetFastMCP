@@ -9,11 +9,16 @@ public class Prompt
 {
     [JsonPropertyName("name")]
     public string Name { get; set; } = string.Empty;
+
     [JsonPropertyName("description")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? Description { get; set; }
+
     [JsonPropertyName("arguments")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public List<PromptArgument>? Arguments { get; set; }
 
-     [JsonPropertyName("icon")]
+    [JsonPropertyName("icon")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? Icon { get; set; }
 }

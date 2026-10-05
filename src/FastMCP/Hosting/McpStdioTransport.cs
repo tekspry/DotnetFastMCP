@@ -11,7 +11,7 @@ public class McpStdioTransport : IMcpSession
     private readonly McpRequestHandler _requestHandler;
     private readonly FastMCPServer _server;
     private readonly ILogger<McpStdioTransport> _logger;
-    private static readonly JsonSerializerOptions _jsonOptions = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+    private static readonly JsonSerializerOptions _jsonOptions = McpJson.Options;
     public McpStdioTransport(McpRequestHandler requestHandler, FastMCPServer server, ILogger<McpStdioTransport> logger)
     {
         _requestHandler = requestHandler;
@@ -45,18 +45,23 @@ public class McpStdioTransport : IMcpSession
                 }
                 catch (JsonException)
                 {
-                    // Invalid JSON, ignore or send parse error? 
-                    // MCP Spec says we should send error if possible, but if we can't parse ID, we can't reply effectively.
-                    // Let's try to send a ParseError without ID.
-                     var error = JsonRpcResponse.FromError(JsonRpcError.ErrorCodes.ParseError, "Parse error", null);
-                     await SendResponseAsync(error);
-                     continue;
+                    // Invalid JSON: Send ParseError
+                    var error = JsonRpcResponse.FromError(JsonRpcError.ErrorCodes.ParseError, "Parse error", 0);
+                    await SendResponseAsync(error);
+                    continue;
                 }
                 if (request != null)
                 {
-                    // Handle and Reply
+                    // Handle request
                     var response = await _requestHandler.HandleRequestAsync(request, _server, null, this, cancellationToken); // User is null for Stdio
-                    await SendResponseAsync(response);
+                    
+                    // JSON-RPC 2.0 / MCP Specification:
+                    // Notifications (requests without an ID) MUST NOT receive a response over the wire.
+                    // Only send a response if both the incoming request and the response have a valid ID.
+                    if (request.Id != null && response != null && response.Id != null)
+                    {
+                        await SendResponseAsync(response);
+                    }
                 }
             }
         }

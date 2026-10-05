@@ -66,7 +66,7 @@ public class McpTelemetryMiddleware : IMcpMiddleware
 
             var response = await next(context, cancellationToken);
 
-            if (response.Error != null)
+            if (response?.Error != null)
             {
                 activity?.SetStatus(ActivityStatusCode.Error, response.Error.Message);
                 activity?.SetTag("mcp.error.code", response.Error.Code);

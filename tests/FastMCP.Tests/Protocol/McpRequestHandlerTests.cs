@@ -59,15 +59,72 @@ public class McpRequestHandlerTests
     }
 
     [Fact]
-    public async Task HandlePing_ReturnsPong()
+    public async Task HandlePing_ReturnsEmptyResult()
     {
         var request = new JsonRpcRequest { JsonRpc = "2.0", Id = 1, Method = "ping" };
         var response = await _handler.HandleRequestAsync(request, _server, null);
 
         Assert.NotNull(response);
         Assert.Equal(1, response.Id);
-        Assert.Equal("pong", response.Result);
+        Assert.NotNull(response.Result);
         Assert.Null(response.Error);
+
+        var json = System.Text.Json.JsonSerializer.Serialize(response, McpJson.Options);
+        Assert.Contains("\"result\":{}", json);
+    }
+
+    [Fact]
+    public async Task HandleNotifications_Initialized_HasNullId()
+    {
+        var request = new JsonRpcRequest { JsonRpc = "2.0", Method = "notifications/initialized" };
+        var response = await _handler.HandleRequestAsync(request, _server, null);
+
+        // Notifications must have Id = null so transports drop them without emitting wire messages
+        Assert.NotNull(response);
+        Assert.Null(response.Id);
+    }
+
+    [Fact]
+    public async Task HandlePromptsList_DoesNotSerializeNullDescription()
+    {
+        var request = new JsonRpcRequest { JsonRpc = "2.0", Id = 2, Method = "prompts/list" };
+        var response = await _handler.HandleRequestAsync(request, _server, null);
+
+        Assert.NotNull(response);
+        Assert.Equal(2, response.Id);
+
+        var json = System.Text.Json.JsonSerializer.Serialize(response, McpJson.Options);
+        // Ensure no null descriptions or null icons appear in JSON output
+        Assert.DoesNotContain("\"description\":null", json);
+        Assert.DoesNotContain("\"icon\":null", json);
+    }
+
+    [Fact]
+    public async Task HandleResourcesList_DoesNotSerializeNullFields()
+    {
+        var request = new JsonRpcRequest { JsonRpc = "2.0", Id = 3, Method = "resources/list" };
+        var response = await _handler.HandleRequestAsync(request, _server, null);
+
+        Assert.NotNull(response);
+        Assert.Equal(3, response.Id);
+
+        var json = System.Text.Json.JsonSerializer.Serialize(response, McpJson.Options);
+        Assert.DoesNotContain("\"description\":null", json);
+        Assert.DoesNotContain("\"icon\":null", json);
+        Assert.DoesNotContain("\"mimeType\":null", json);
+    }
+
+    [Fact]
+    public async Task HandleInitialize_DoesNotSerializeNullIconInServerInfo()
+    {
+        var request = new JsonRpcRequest { JsonRpc = "2.0", Id = 4, Method = "initialize" };
+        var response = await _handler.HandleRequestAsync(request, _server, null);
+
+        Assert.NotNull(response);
+        Assert.Equal(4, response.Id);
+
+        var json = System.Text.Json.JsonSerializer.Serialize(response, McpJson.Options);
+        Assert.DoesNotContain("\"icon\":null", json);
     }
 
     [Fact]

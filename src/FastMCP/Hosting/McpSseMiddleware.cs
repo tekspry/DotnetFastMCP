@@ -10,7 +10,7 @@ public class McpSseMiddleware
 {
     private readonly RequestDelegate _next;
     private readonly McpSseSessionManager _sessionManager;
-    private static readonly JsonSerializerOptions _jsonOptions = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+    private static readonly JsonSerializerOptions _jsonOptions = McpJson.Options;
 
     public McpSseMiddleware(RequestDelegate next, McpSseSessionManager sessionManager)
     {
@@ -86,8 +86,12 @@ public class McpSseMiddleware
             // Context & Interaction: We pass the SSE session so tools can report progress/logs
             var response = await handler.HandleRequestAsync(request, server, context.User, session, context.RequestAborted);
 
-            // SSE Spec: POST response is 202 Accepted, result is sent via SSE event
-            await session.SendResponseAsync(response, context.RequestAborted);
+            // SSE Spec: POST response is 202 Accepted.
+            // Result is sent via SSE event ONLY if the request was not a notification (has an ID).
+            if (request.Id != null && response != null && response.Id != null)
+            {
+                await session.SendResponseAsync(response, context.RequestAborted);
+            }
 
             context.Response.StatusCode = 202; // Accepted
         }

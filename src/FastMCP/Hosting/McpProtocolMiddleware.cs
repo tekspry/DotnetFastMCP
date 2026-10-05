@@ -10,7 +10,7 @@ namespace FastMCP.Hosting;
 public class McpProtocolMiddleware
 {
     private readonly RequestDelegate _next;    
-    private static readonly JsonSerializerOptions _jsonOptions = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+    private static readonly JsonSerializerOptions _jsonOptions = McpJson.Options;
     
     // AuthorizationService is now used by the Handler, not the Middleware directly
     public McpProtocolMiddleware(RequestDelegate next)
@@ -28,14 +28,21 @@ public class McpProtocolMiddleware
                 return;
             }
             
-            context.Response.ContentType = "application/json";
-
             var request = await ParseJsonRpcRequestAsync(context);
             if (request == null) return; 
 
             // The Core Transformation: Delegate to the Handler
-            var response = await requestHandler.HandleRequestAsync(request, server, context.User, new ServerLogSession(logger),context.RequestAborted);
-            await JsonSerializer.SerializeAsync(context.Response.Body, response, _jsonOptions);
+            var response = await requestHandler.HandleRequestAsync(request, server, context.User, new ServerLogSession(logger), context.RequestAborted);
+            
+            if (request.Id != null && response != null && response.Id != null)
+            {
+                context.Response.ContentType = "application/json";
+                await JsonSerializer.SerializeAsync(context.Response.Body, response, _jsonOptions);
+            }
+            else
+            {
+                context.Response.StatusCode = 202; // Accepted (notification acknowledged, no response body)
+            }
         }
         catch (Exception ex)
         {
