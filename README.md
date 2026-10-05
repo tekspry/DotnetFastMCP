@@ -1,10 +1,11 @@
 # DotnetFastMCP — Enterprise Security & Governance Gateway for MCP Servers
 
+[![CI](https://github.com/tekspry/DotnetFastMCP/actions/workflows/ci.yml/badge.svg)](https://github.com/tekspry/DotnetFastMCP/actions/workflows/ci.yml)
 [![.NET 8.0](https://img.shields.io/badge/.NET-8.0%20LTS-blue)](https://dotnet.microsoft.com)
 [![.NET 10.0](https://img.shields.io/badge/.NET-10.0%20LTS-purple)](https://dotnet.microsoft.com)
 [![NuGet](https://img.shields.io/badge/NuGet-v2.1.1-orange)](https://www.nuget.org/packages/DotnetFastMCP)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
-[![GitHub](https://img.shields.io/badge/GitHub-tekspry-black)](https://github.com/tekspry/.NetFastMCP)
+[![GitHub](https://img.shields.io/badge/GitHub-tekspry-black)](https://github.com/tekspry/DotnetFastMCP)
 
 **Enterprise security, governance, and observability layer for Model Context Protocol (MCP) servers in .NET — OAuth 2.0/OIDC authentication, per-tool MFA enforcement, OpenTelemetry instrumentation, and zero-config health checks. Built on ASP.NET Core.**
 
@@ -90,7 +91,7 @@ dotnet add package DotnetFastMCP --version 2.1.1
 
 Or clone the repository:
 ```bash
-git clone https://github.com/tekspry/.NetFastMCP.git
+git clone https://github.com/tekspry/DotnetFastMCP.git
 cd DotnetFastMCP
 dotnet build -c Release
 ```
@@ -1205,7 +1206,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🐛 Issues & Support
 
-For bug reports and feature requests, please use [GitHub Issues](https://github.com/tekspry/.NetFastMCP/issues).
+For bug reports and feature requests, please use [GitHub Issues](https://github.com/tekspry/DotnetFastMCP/issues).
 
 ## ✨ What's New
 
