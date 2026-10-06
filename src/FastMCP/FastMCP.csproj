@@ -5,7 +5,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <PackageId>DotnetFastMCP</PackageId>
-    <Version>2.1.1</Version>
+    <Version>2.1.2</Version>
     <Authors>TekSpry</Authors>
     <Company>TekSpry</Company>
     <Description>Enterprise security, governance, and observability gateway for MCP servers in .NET. OAuth 2.0/OIDC (Azure AD, Google, GitHub, Auth0, Okta, Cognito), per-tool MFA, OpenTelemetry metrics/tracing, health checks, and a native .NET client library. Built on ASP.NET Core for .NET 8 and .NET 10.</Description>

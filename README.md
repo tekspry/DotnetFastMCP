@@ -3,7 +3,7 @@
 [![CI](https://github.com/tekspry/DotnetFastMCP/actions/workflows/ci.yml/badge.svg)](https://github.com/tekspry/DotnetFastMCP/actions/workflows/ci.yml)
 [![.NET 8.0](https://img.shields.io/badge/.NET-8.0%20LTS-blue)](https://dotnet.microsoft.com)
 [![.NET 10.0](https://img.shields.io/badge/.NET-10.0%20LTS-purple)](https://dotnet.microsoft.com)
-[![NuGet](https://img.shields.io/badge/NuGet-v2.1.1-orange)](https://www.nuget.org/packages/DotnetFastMCP)
+[![NuGet](https://img.shields.io/badge/NuGet-v2.1.2-orange)](https://www.nuget.org/packages/DotnetFastMCP)
 [![Glama](https://glama.ai/mcp/servers/tekspry/DotnetFastMCP/badges/score.svg)](https://glama.ai/mcp/servers/tekspry/DotnetFastMCP)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![GitHub](https://img.shields.io/badge/GitHub-tekspry-black)](https://github.com/tekspry/DotnetFastMCP)
@@ -87,7 +87,7 @@ DotnetFastMCP adds enterprise-grade security, governance, and observability to y
 
 Install via NuGet Package Manager:
 ```bash
-dotnet add package DotnetFastMCP --version 2.1.1
+dotnet add package DotnetFastMCP --version 2.1.2
 ```
 
 Or clone the repository:
@@ -1211,7 +1211,14 @@ For bug reports and feature requests, please use [GitHub Issues](https://github.
 
 ## ✨ What's New
 
-### v2.1.1 - Client Deserialization Patch (Latest - Sep 2026)
+### v2.1.2 - MCP Protocol Specification Compliance & Glama.ai Certification (Latest - Oct 2026)
+- 🏅 **Glama.ai Certified** - Passed 100% of automated containerized introspection tests on the Glama.ai MCP registry.
+- 🎯 **Strict MCP `ping` Handling** - Standardized `ping` JSON-RPC response to emit an empty result object (`{}`) strictly complying with the MCP specification `EmptyResultSchema`.
+- 🧼 **Zod Schema Null Omission** - Configured `WhenWritingNull` on `Prompt`, `Resource`, and `Tool` protocol metadata, ensuring compatibility with `@modelcontextprotocol/sdk` Zod validation without mutating user data payloads.
+- 🔕 **Silent Notification Handling** - Standardized notification processing across STDIO, SSE, and HTTP transports to strictly prevent erroneous `id: null` response frames from being emitted over the wire.
+- 🧪 **78 Tests Passing** - Comprehensive unit and integration test matrix validating protocol compliance, parameter filtering, and serialization.
+
+### v2.1.1 - Client Deserialization Patch (Sep 2026)
 - 🐛 **Fix `McpClient.CallToolAsync<TResult>` Deserialization** - Resolved deserialization error where calling tools returning primitive types (`int`, `bool`, `double`, etc.), `string`, or custom POCO models threw JSON conversion errors (fixes #37).
 - 📦 **Automatic Envelope Unwrapping** - Correctly unwraps and deserializes the inner payload from `CallToolResult.Content` while maintaining full MCP specification compliance.
 - ⚡ **Direct Envelope Overload** - Added non-generic `client.CallToolAsync("toolName", args)` returning raw `CallToolResult` directly.
