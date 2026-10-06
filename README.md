@@ -4,6 +4,7 @@
 [![.NET 8.0](https://img.shields.io/badge/.NET-8.0%20LTS-blue)](https://dotnet.microsoft.com)
 [![.NET 10.0](https://img.shields.io/badge/.NET-10.0%20LTS-purple)](https://dotnet.microsoft.com)
 [![NuGet](https://img.shields.io/badge/NuGet-v2.1.1-orange)](https://www.nuget.org/packages/DotnetFastMCP)
+[![Glama](https://glama.ai/mcp/servers/tekspry/DotnetFastMCP/badges/score.svg)](https://glama.ai/mcp/servers/tekspry/DotnetFastMCP)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![GitHub](https://img.shields.io/badge/GitHub-tekspry-black)](https://github.com/tekspry/DotnetFastMCP)
 
