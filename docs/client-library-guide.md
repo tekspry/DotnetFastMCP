@@ -126,7 +126,7 @@ You should see the client connect, list tools, and successfully invoke the `add_
 --- Calling 'add_numbers' ---
 Result: 10 + 55 = 65
 
---- Calling 'TestContext' (Wait for logs...) ---
+--- Calling 'process_task' (Wait for logs...) ---
 [NOTIFY] notifications/message: ...
 Context Result: Processed: Hello Client!
 ```

@@ -48,10 +48,10 @@ try
     Console.WriteLine($"Result: 10 + 55 = {result}");
 
     // 3. Call a Tool that logs (to see notifications)
-    Console.WriteLine("\n--- Calling 'TestContext' (Wait for logs...) ---");
-    // Note: Assuming 'TestContext' exists and emits logs
+    Console.WriteLine("\n--- Calling 'process_task' (Wait for logs...) ---");
+    // Note: Assuming 'process_task' exists and emits logs
     // We construct the parameters anonymously
-    var contextResult = await client.CallToolAsync<string>("TestContext", new { input = "Hello Client!" });
+    var contextResult = await client.CallToolAsync<string>("process_task", new { input = "Hello Client!" });
     Console.WriteLine($"Context Result: {contextResult}");
 
 }
