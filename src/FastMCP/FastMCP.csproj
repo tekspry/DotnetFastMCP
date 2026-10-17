@@ -5,13 +5,17 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <PackageId>DotnetFastMCP</PackageId>
-    <Version>2.1.2</Version>
+    <Version>2.2.0</Version>
     <Authors>TekSpry</Authors>
     <Company>TekSpry</Company>
-    <Description>Enterprise security, governance, and observability gateway for MCP servers in .NET. OAuth 2.0/OIDC (Azure AD, Google, GitHub, Auth0, Okta, Cognito), per-tool MFA, OpenTelemetry metrics/tracing, health checks, and a native .NET client library. Built on ASP.NET Core for .NET 8 and .NET 10.</Description>
+    <Description>Enterprise-grade FastMCP framework for .NET. Features multimodal content handling (McpContent, McpMediaLoader for universal local/remote/data-URI image resolution), OAuth 2.0/OIDC (Azure AD, Google, GitHub, Auth0, Okta, Cognito), per-tool MFA, OpenTelemetry metrics/tracing, health checks, and a native .NET client library. Built on ASP.NET Core for .NET 8 and .NET 10.</Description>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <RepositoryUrl>https://github.com/tekspry/DotnetFastMCP</RepositoryUrl>       
-    <PackageTags>mcp;model-context-protocol;ai;dotnet;csharp;aspnetcore;oauth2;opentelemetry;llm;agents;enterprise;mfa;health-checks;json-rpc</PackageTags>
+    <PackageTags>mcp;model-context-protocol;ai;dotnet;csharp;aspnetcore;multimodal;vision;images;media;oauth2;opentelemetry;llm;agents;enterprise;mfa;health-checks;json-rpc</PackageTags>
+    <PackageReleaseNotes>v2.2.0 Multimodal Release:
+- Universal McpMediaLoader: Load images and media from HTTP/HTTPS URLs, local files, file:// URIs, Base64 data: URIs, with automatic header/magic-byte MIME sniffing.
+- McpContent multimodal factory methods: ImageFromBytes, ImageFromStreamAsync, ImageFromUriAsync, Json, ResourceText, ResourceBlob, Composite.
+- Eliminates duplicate image fetching boilerplate across AI agent microservices.</PackageReleaseNotes>
     <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
 

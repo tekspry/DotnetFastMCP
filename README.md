@@ -3,7 +3,7 @@
 [![CI](https://github.com/tekspry/DotnetFastMCP/actions/workflows/ci.yml/badge.svg)](https://github.com/tekspry/DotnetFastMCP/actions/workflows/ci.yml)
 [![.NET 8.0](https://img.shields.io/badge/.NET-8.0%20LTS-blue)](https://dotnet.microsoft.com)
 [![.NET 10.0](https://img.shields.io/badge/.NET-10.0%20LTS-purple)](https://dotnet.microsoft.com)
-[![NuGet](https://img.shields.io/badge/NuGet-v2.1.2-orange)](https://www.nuget.org/packages/DotnetFastMCP)
+[![NuGet](https://img.shields.io/badge/NuGet-v2.2.0-orange)](https://www.nuget.org/packages/DotnetFastMCP)
 [![Glama](https://glama.ai/mcp/servers/tekspry/DotnetFastMCP/badges/score.svg)](https://glama.ai/mcp/servers/tekspry/DotnetFastMCP)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![GitHub](https://img.shields.io/badge/GitHub-tekspry-black)](https://github.com/tekspry/DotnetFastMCP)
@@ -16,7 +16,14 @@ DotnetFastMCP adds enterprise-grade security, governance, and observability to y
 
 ### ⭐ Key Features
 
-#### ⚡ Zero-Boilerplate MCP Servers (NEW! v2.1.0)
+#### 🖼️ Multimodal Content & Universal Media Loader (NEW! v2.2.0)
+- ✅ **Universal Media Loader (`McpMediaLoader`)** - Ingest and resolve images/media from any location: remote HTTP/HTTPS, local file paths, `file://` URIs, and RFC 2397 `data:...;base64,...` URIs without boilerplate.
+- ✅ **Eliminates Repetitive Helper Code** - Replaces duplicate ~40-line `FetchImageDataAsync` methods across multimodal agent servers with a single line: `await McpMediaLoader.LoadAsBase64Async(url, httpClient)`.
+- ✅ **Smart MIME Sniffing** - Magic-byte inspection for JPEG, PNG, GIF, WebP, BMP with HTTP `Content-Type` header inspection and file extension fallbacks.
+- ✅ **Zero-Allocation Fast-Path** - Data URIs with Base64 payloads are parsed directly without allocating intermediate byte arrays.
+- ✅ **Expanded `McpContent` Factory Methods** - First-class helpers for `McpContent.Json(obj)`, `McpContent.ImageFromBytes(bytes, mime)`, `McpContent.ImageFromStreamAsync(stream, mime)`, `McpContent.ImageFromUriAsync(uri)`, `McpContent.ResourceText()`, `McpContent.ResourceBlob()`, and `McpContent.Composite(...)`.
+
+#### ⚡ Zero-Boilerplate MCP Servers (v2.1.0)
 - ✅ **Automatic DI Registration** - Non-static tool, resource, and prompt classes scanned via `WithComponentsFrom()` are automatically registered as `Transient` services in the DI container. Zero manual `builder.Services.AddTransient<T>()` boilerplate.
 - ✅ **Preserves Custom Lifetimes** - Built on `TryAddTransient` semantics to honor custom Singleton or Scoped registrations without collision.
 - ✅ **`[McpDescription]` Parameter Attributes** - Annotate method parameters with rich descriptions emitted directly into JSON Schema `inputSchema` (`tools/list`), significantly enhancing LLM tool-calling accuracy.
@@ -87,7 +94,7 @@ DotnetFastMCP adds enterprise-grade security, governance, and observability to y
 
 Install via NuGet Package Manager:
 ```bash
-dotnet add package DotnetFastMCP --version 2.1.2
+dotnet add package DotnetFastMCP --version 2.2.0
 ```
 
 Or clone the repository:
@@ -692,7 +699,8 @@ Test files include:
 
 ### Guides & Features
 
-- [Automatic DI Registration & Parameter Descriptions Guide](docs/auto-di-registration-guide.md) (NEW! v2.1.0)
+- [Multimodal Content & Universal Media Loader Guide](docs/multimodal-guide.md) (NEW! v2.2.0)
+- [Automatic DI Registration & Parameter Descriptions Guide](docs/auto-di-registration-guide.md) (v2.1.0)
 - [Health Checks & Diagnostics Guide](docs/health-checks-guide.md)
 - [Observability & OpenTelemetry Guide](docs/observability-guide.md)
 - [LLM Integration Guide](docs/llm-integration-guide.md)
@@ -726,7 +734,48 @@ See [MFA Support Guide](docs/mfa-support-guide.md) for enforcing Multi-Factor Au
 
 ## 🏗️ Advanced Features
 
-### ⚡ Automatic DI Registration & [McpDescription] (NEW! v2.1.0)
+### 🖼️ Multimodal Content & Universal Media Loader (NEW! v2.2.0)
+
+DotnetFastMCP 2.2 introduces first-class multimodal capabilities designed for vision, generative AI, and image-processing agent servers:
+
+1. **`McpMediaLoader` Universal Media Resolution**: Seamlessly load images and media from remote HTTP/HTTPS URLs, local files, `file://` URIs, or RFC 2397 `data:...;base64,...` URIs without needing custom boilerplate.
+2. **Zero Duplicate Boilerplate**: Replaces repetitive ~40-line `FetchImageDataAsync` methods across microservices with a single line:
+   ```csharp
+   var (base64, mimeType) = await McpMediaLoader.LoadAsBase64Async(imageUrl, httpClient);
+   ```
+3. **Magic-Byte Sniffing**: Inspects byte headers (`image/png`, `image/jpeg`, `image/gif`, `image/webp`, `image/bmp`) when HTTP headers are missing or inaccurate.
+4. **Rich `McpContent` Factory Methods**:
+   - `McpContent.ImageFromBytes(bytes, "image/png")`
+   - `await McpContent.ImageFromUriAsync("https://example.com/photo.jpg", httpClient)`
+   - `await McpContent.ImageFromStreamAsync(stream, "image/webp")`
+   - `McpContent.Json(orderObject)`
+   - `McpContent.Composite(McpContent.Text("Summary"), McpContent.Image(...))`
+
+```csharp
+using FastMCP;
+using FastMCP.Attributes;
+
+public class VisionTools
+{
+    private readonly HttpClient _httpClient;
+
+    public VisionTools(HttpClient httpClient) => _httpClient = httpClient;
+
+    [McpTool("analyze_image", "Inspect an image from a URL, local path, or base64 data URI")]
+    public async Task<McpContent> AnalyzeImage(
+        [McpDescription("Image URL, file path, or data URI")] string imageUri,
+        CancellationToken ct)
+    {
+        // One-line universal media loading (supports HTTP/HTTPS, file://, local paths, data URIs)
+        var (base64, mimeType) = await McpMediaLoader.LoadAsBase64Async(imageUri, _httpClient, cancellationToken: ct);
+
+        // Return an MCP Image Content payload directly:
+        return McpContent.Image(base64, mimeType);
+    }
+}
+```
+
+### ⚡ Automatic DI Registration & [McpDescription] (v2.1.0)
 
 DotnetFastMCP 2.1 makes authoring production MCP servers completely zero-boilerplate by pairing automatic Dependency Injection with LLM-grade parameter schemas:
 
@@ -1211,7 +1260,15 @@ For bug reports and feature requests, please use [GitHub Issues](https://github.
 
 ## ✨ What's New
 
-### v2.1.2 - MCP Protocol Specification Compliance & Glama.ai Certification (Latest - Oct 2026)
+### v2.2.0 - Multimodal Content & Universal Media Loader (Latest - Oct 2026)
+- 🖼️ **Universal `McpMediaLoader`** - Ingest and resolve images/media from any location: remote HTTP/HTTPS, local file paths, `file://` URIs, and RFC 2397 `data:...;base64,...` URIs without custom boilerplate.
+- ✂️ **Eliminates Microservice Boilerplate** - Replaces duplicate ~40-line `FetchImageDataAsync` methods across multimodal agent servers with a single line: `await McpMediaLoader.LoadAsBase64Async(url, httpClient)`.
+- 🔍 **Intelligent MIME Sniffing** - Magic-byte inspection for JPEG, PNG, GIF, WebP, BMP with HTTP `Content-Type` header inspection and file extension fallbacks.
+- ⚡ **Zero-Allocation Data URI Fast-Path** - Direct extraction from Base64 data URIs without allocating intermediate byte arrays.
+- 📦 **Expanded `McpContent` Factory Methods** - First-class helpers for `McpContent.Json(obj)`, `McpContent.ImageFromBytes(bytes, mime)`, `McpContent.ImageFromStreamAsync(stream, mime)`, `McpContent.ImageFromUriAsync(uri)`, `McpContent.ResourceText()`, `McpContent.ResourceBlob()`, and `McpContent.Composite(...)`.
+- 🧪 **126 Tests Passing (252 Total)** - Comprehensive test matrix with 41 new unit, edge-case, and negative test cases passing across both .NET 8 LTS and .NET 10 LTS.
+
+### v2.1.2 - MCP Protocol Specification Compliance & Glama.ai Certification (Oct 2026)
 - 🏅 **Glama.ai Certified** - Passed 100% of automated containerized introspection tests on the Glama.ai MCP registry.
 - 🎯 **Strict MCP `ping` Handling** - Standardized `ping` JSON-RPC response to emit an empty result object (`{}`) strictly complying with the MCP specification `EmptyResultSchema`.
 - 🧼 **Zod Schema Null Omission** - Configured `WhenWritingNull` on `Prompt`, `Resource`, and `Tool` protocol metadata, ensuring compatibility with `@modelcontextprotocol/sdk` Zod validation without mutating user data payloads.
